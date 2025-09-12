@@ -34,30 +34,36 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.fitfurs.ui.theme.FitFursTheme
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
+import android.content.Context
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.Pets
+import androidx.compose.material.icons.filled.MedicalServices
+
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            FitFursTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = Color.White
-                ) {
-                    AppNavigation()
-                }
-            }
+            val navController = rememberNavController()
+            AppNavigation(navController)
         }
     }
 }
 
 @Composable
-fun AppNavigation() {
-    val navController = rememberNavController()
-    NavHost(navController = navController, startDestination = "welcome") {
+fun AppNavigation(navController: NavHostController) {
+    NavHost(navController, startDestination = "welcome") {
         composable("welcome") { WelcomeScreen(navController) }
-        composable("login") { LoginScreen(navController) }
         composable("signup") { SignupScreen(navController) }
+        composable("login") { LoginScreen(navController) }
+        composable("home") { HomeScreen(navController) }
     }
 }
 
@@ -156,6 +162,9 @@ fun LoginScreen(navController: NavHostController) {
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
 
+    val context = LocalContext.current
+    val prefs = context.getSharedPreferences("fitfurs_prefs", Context.MODE_PRIVATE)
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -213,7 +222,29 @@ fun LoginScreen(navController: NavHostController) {
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(
-            onClick = { /* Handle login */ },
+            onClick = {
+                val savedEmail = prefs.getString("email", null)
+                val savedPassword = prefs.getString("password", null)
+
+                when {
+                    email.isBlank() || password.isBlank() -> {
+                        Toast.makeText(context, "Please enter email and password", Toast.LENGTH_SHORT).show()
+                    }
+                    savedEmail == null || savedPassword == null -> {
+                        // no local account found
+                        Toast.makeText(context, "No local account found. Please Sign Up first.", Toast.LENGTH_SHORT).show()
+                    }
+                    email == savedEmail && password == savedPassword -> {
+                        Toast.makeText(context, "Login Successful!", Toast.LENGTH_SHORT).show()
+                        navController.navigate("home") {
+                            popUpTo("login") { inclusive = true }
+                        }
+                    }
+                    else -> {
+                        Toast.makeText(context, "Invalid credentials", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            },
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(8.dp),
             colors = ButtonDefaults.buttonColors(containerColor = Color.Black)
@@ -223,12 +254,16 @@ fun LoginScreen(navController: NavHostController) {
     }
 }
 
+
+
 @Composable
 fun SignupScreen(navController: NavHostController) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
+
+    val context = LocalContext.current
 
     Column(
         modifier = Modifier
@@ -305,7 +340,27 @@ fun SignupScreen(navController: NavHostController) {
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(
-            onClick = { /* Handle signup */ },
+            onClick = {
+                when {
+                    email.isBlank() || password.isBlank() || confirmPassword.isBlank() -> {
+                        Toast.makeText(context, "All fields are required", Toast.LENGTH_SHORT).show()
+                    }
+                    password != confirmPassword -> {
+                        Toast.makeText(context, "Passwords do not match", Toast.LENGTH_SHORT).show()
+                    }
+                    else -> {
+                        // ✅ Save account locally
+                        val prefs = context.getSharedPreferences("fitfurs_prefs", Context.MODE_PRIVATE)
+                        prefs.edit()
+                            .putString("email", email)
+                            .putString("password", password)
+                            .apply()
+
+                        Toast.makeText(context, "Signup Successful!", Toast.LENGTH_SHORT).show()
+                        navController.navigate("login") // Go to login after signup
+                    }
+                }
+            },
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(8.dp),
             colors = ButtonDefaults.buttonColors(containerColor = Color.Black)
@@ -314,3 +369,132 @@ fun SignupScreen(navController: NavHostController) {
         }
     }
 }
+
+@Composable
+fun HomeScreen(navController: NavHostController) {
+    val context = LocalContext.current
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        // 🔹 Top Row (Profile + Settings)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                // Profile Image
+                Image(
+                    painter = painterResource(id = R.drawable.dog), // Replace with your profile img
+                    contentDescription = "Profile",
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Hello, K",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            IconButton(onClick = {
+                Toast.makeText(context, "Settings clicked", Toast.LENGTH_SHORT).show()
+            }) {
+                Icon(
+                    imageVector = Icons.Default.Settings,
+                    contentDescription = "Settings"
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // 🔹 Pet Illustration + Title
+        Row(
+            modifier = Modifier
+                .padding(top = 24.dp)
+                .fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.ico1), // Replace with your cat-dog image
+                contentDescription = "Pet Illustration",
+                modifier = Modifier.size(60.dp),
+                contentScale = ContentScale.Fit
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "Pet Overview",
+                fontSize = 26.sp,
+                fontWeight = FontWeight.Bold
+
+            )
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // 🔹 Medical Tracking Button
+        Button(
+            onClick = { Toast.makeText(context, "Medical Tracking", Toast.LENGTH_SHORT).show() },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 40.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF5F5F5))
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.icon2), // Replace with paw icon
+                contentDescription = "Medical",
+                tint = Color.Black
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Medical Tracking", color = Color.Black)
+        }
+
+        // 🔹 Diet & Exercise Button
+        Button(
+            onClick = { Toast.makeText(context, "Diet & Exercise", Toast.LENGTH_SHORT).show() },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF5F5F5))
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.icon3), // Replace with your food/exercise icon
+                contentDescription = "Exercise",
+                tint = Color.Black
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Diet & Exercise", color = Color.Black)
+        }
+
+        // 🔹 Contacts Button
+        Button(
+            onClick = { Toast.makeText(context, "Contacts", Toast.LENGTH_SHORT).show() },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF5F5F5))
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.icon4),
+                contentDescription = "Contacts",
+                tint = Color.Black
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Contacts", color = Color.Black)
+        }
+    }
+}
+
+
+
+
+
