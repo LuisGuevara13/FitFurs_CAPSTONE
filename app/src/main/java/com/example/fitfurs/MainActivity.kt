@@ -463,7 +463,7 @@ fun HomeScreen(navController: NavHostController) {
                 .fillMaxWidth()
                 .padding(vertical = 8.dp),
             shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF5F5F5))
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xCED4DA))
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.icon3), // Replace with your food/exercise icon
