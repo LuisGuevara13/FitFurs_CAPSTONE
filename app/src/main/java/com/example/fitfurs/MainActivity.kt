@@ -47,6 +47,7 @@ import androidx.compose.material.icons.filled.Pets
 import androidx.compose.material.icons.filled.MedicalServices
 
 
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -376,28 +377,28 @@ fun HomeScreen(navController: NavHostController) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
+            .padding( top = 30.dp, start = 15.dp, end = 15.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // 🔹 Top Row (Profile + Settings)
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                // Profile Image
+
                 Image(
-                    painter = painterResource(id = R.drawable.dog), // Replace with your profile img
+                    painter = painterResource(id = R.drawable.livin), // Replace with your profile img
                     contentDescription = "Profile",
                     modifier = Modifier
-                        .size(40.dp)
+                        .size(60.dp)
                         .clip(CircleShape)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = "Hello, K",
-                    fontSize = 18.sp,
+                    fontSize = 20.sp,
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -407,16 +408,17 @@ fun HomeScreen(navController: NavHostController) {
                 Icon(
                     imageVector = Icons.Default.Settings,
                     contentDescription = "Settings"
+
                 )
             }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // 🔹 Pet Illustration + Title
+
         Row(
             modifier = Modifier
-                .padding(top = 24.dp)
+                .padding(top = 45.dp, bottom = 10.dp)
                 .fillMaxWidth(),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
@@ -426,11 +428,12 @@ fun HomeScreen(navController: NavHostController) {
                 contentDescription = "Pet Illustration",
                 modifier = Modifier.size(60.dp),
                 contentScale = ContentScale.Fit
+
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = "Pet Overview",
-                fontSize = 26.sp,
+                fontSize = 35.sp,
                 fontWeight = FontWeight.Bold
 
             )
@@ -443,53 +446,84 @@ fun HomeScreen(navController: NavHostController) {
             onClick = { Toast.makeText(context, "Medical Tracking", Toast.LENGTH_SHORT).show() },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 40.dp),
+                .height(100.dp)
+                .padding(vertical = 15.dp),
             shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF5F5F5))
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD7D7D7))
         ) {
-            Icon(
-                painter = painterResource(id = R.drawable.icon2), // Replace with paw icon
-                contentDescription = "Medical",
-                tint = Color.Black
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Medical Tracking", color = Color.Black)
+            Box(modifier = Modifier.fillMaxWidth()) {
+                Icon(
+                    painter = painterResource(id = R.drawable.icon2),
+                    contentDescription = "Medical",
+                    tint = Color.Black,
+                    modifier = Modifier
+                        .align(Alignment.CenterStart)
+                        .size(33.dp)
+                )
+
+                Text(
+                    "Medical Tracking",
+                    color = Color.Black,
+                    fontSize = 23.sp,
+                    modifier = Modifier.align(Alignment.Center)
+                )
+            }
         }
 
-        // 🔹 Diet & Exercise Button
         Button(
             onClick = { Toast.makeText(context, "Diet & Exercise", Toast.LENGTH_SHORT).show() },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 8.dp),
+                .height(100.dp)
+                .padding(vertical = 15.dp),
             shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xCED4DA))
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD7D7D7))
         ) {
-            Icon(
-                painter = painterResource(id = R.drawable.icon3), // Replace with your food/exercise icon
-                contentDescription = "Exercise",
-                tint = Color.Black
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Diet & Exercise", color = Color.Black)
-        }
+            Box(modifier =  Modifier.fillMaxWidth()){
+                Icon(
+                    painter = painterResource(id = R.drawable.icon3),
+                    contentDescription = "Exercise",
+                    tint = Color.Black,
+                    modifier = Modifier
+                        .align(Alignment.CenterStart)
+                        .size(35.dp)
+                )
+
+                Text(
+                    "Diet & Exercise",
+                    color = Color.Black,
+                    fontSize = 23.sp ,
+                modifier = Modifier.align(Alignment.Center)
+                )
+            }
+            }
+
 
         // 🔹 Contacts Button
         Button(
             onClick = { Toast.makeText(context, "Contacts", Toast.LENGTH_SHORT).show() },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 8.dp),
+                .height(100.dp)
+                .padding(vertical = 15.dp),
             shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF5F5F5))
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD7D7D7))
         ) {
-            Icon(
-                painter = painterResource(id = R.drawable.icon4),
-                contentDescription = "Contacts",
-                tint = Color.Black
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Contacts", color = Color.Black)
+            Box(modifier = Modifier.fillMaxWidth()){
+                Icon(
+                    painter = painterResource(id = R.drawable.icon4),
+                    contentDescription = "Contacts",
+                    tint = Color.Black,
+                    modifier = Modifier
+                        .align(Alignment.CenterStart)
+                        .size(28.dp)
+                )
+                Text("Contacts",
+                    color = Color.Black,
+                    fontSize = 23.sp,
+                    modifier = Modifier.align(Alignment.Center))
+            }
+
         }
     }
 }
