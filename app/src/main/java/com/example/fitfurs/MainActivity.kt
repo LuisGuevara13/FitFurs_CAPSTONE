@@ -491,6 +491,7 @@ fun HomeScreen(navController: NavHostController) {
             Spacer(modifier = Modifier.width(8.dp))
             Text("Contacts", color = Color.Black)
 
+
         }
     }
 }
