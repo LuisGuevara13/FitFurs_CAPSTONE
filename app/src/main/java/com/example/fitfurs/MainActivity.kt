@@ -65,7 +65,7 @@ fun AppNavigation(navController: NavHostController) {
         composable("signup") { SignupScreen(navController) }
         composable("login") { LoginScreen(navController) }
         composable("home") { HomeScreen(navController) }
-        composable("pet_care") { DogAppUI() } // ✅ New route
+        composable("pet_care") { DogAppUI(navController) } // ✅ New route
     }
 }
 @Composable
@@ -497,9 +497,8 @@ fun HomeScreen(navController: NavHostController) {
     }
 }
 @Composable
-fun DogAppUI() {
+fun DogAppUI(navController: NavHostController) {
     Scaffold(
-        bottomBar = { BottomNavigationBar() }
     ) { padding ->
         Column(
             modifier = Modifier
@@ -507,10 +506,21 @@ fun DogAppUI() {
                 .padding(16.dp)
                 .fillMaxSize()
         ) {
+            // ✅ Back Button added here
+            IconButton(
+                onClick = { navController.popBackStack() },
+                modifier = Modifier.align(Alignment.Start)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ArrowBack,
+                    contentDescription = "Back"
+                )
+            }
+
             // Profile Section
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Image(
-                    painter = painterResource(id = R.drawable.dogprof), // replace with your dog image
+                    painter = painterResource(id = R.drawable.dogprof),
                     contentDescription = "Dog Profile",
                     modifier = Modifier
                         .size(50.dp)
@@ -611,60 +621,5 @@ fun MealItem(name: String, time: String) {
             Text(name, fontWeight = FontWeight.Medium)
         }
         Text(time, fontSize = 14.sp, color = Color.Gray)
-    }
-}
-@Composable
-fun BottomNavigationBar() {
-    NavigationBar(containerColor = Color.White) {
-        NavigationBarItem(
-            selected = true,
-            onClick = { /* TODO: Handle Home */ },
-            icon = {
-                Icon(
-                    painter = painterResource(id = R.drawable.home), // your home icon
-                    contentDescription = "Home"
-                )
-            }
-        )
-        NavigationBarItem(
-            selected = false,
-            onClick = { /* TODO: Handle Calendar */ },
-            icon = {
-                Icon(
-                    painter = painterResource(id = R.drawable.home), // your calendar icon
-                    contentDescription = "Calendar"
-                )
-            }
-        )
-        NavigationBarItem(
-            selected = false,
-            onClick = { /* TODO: Handle Notifications */ },
-            icon = {
-                Icon(
-                    painter = painterResource(id = R.drawable.home), // your notification icon
-                    contentDescription = "Notifications"
-                )
-            }
-        )
-        NavigationBarItem(
-            selected = false,
-            onClick = { /* TODO: Handle Profile */ },
-            icon = {
-                Icon(
-                    painter = painterResource(id = R.drawable.home), // your profile icon
-                    contentDescription = "Profile"
-                )
-            }
-        )
-        NavigationBarItem(
-            selected = false,
-            onClick = { /* TODO: Handle Settings */ },
-            icon = {
-                Icon(
-                    painter = painterResource(id = R.drawable.home), // your settings icon
-                    contentDescription = "Settings"
-                )
-            }
-        )
     }
 }
