@@ -439,7 +439,7 @@ fun HomeScreen(navController: NavHostController) {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // 🔹 Medical Tracking Button
+
         Button(
             onClick = { Toast.makeText(context, "Medical Tracking", Toast.LENGTH_SHORT).show() },
             modifier = Modifier
@@ -457,8 +457,7 @@ fun HomeScreen(navController: NavHostController) {
             Text("Medical Tracking", color = Color.Black)
         }
 
-        // 🔹 Diet & Exercise Button
-        // 🔹 Diet & Exercise Button
+
         Button(
             onClick = { navController.navigate("pet_care") }, // ✅ Navigate to PetCareScreen
             modifier = Modifier
