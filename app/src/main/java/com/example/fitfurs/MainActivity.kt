@@ -350,7 +350,7 @@ fun SignupScreen(navController: NavHostController) {
                         Toast.makeText(context, "Passwords do not match", Toast.LENGTH_SHORT).show()
                     }
                     else -> {
-                        // ✅ Save account locally
+
                         val prefs = context.getSharedPreferences("fitfurs_prefs", Context.MODE_PRIVATE)
                         prefs.edit()
                             .putString("email", email)
