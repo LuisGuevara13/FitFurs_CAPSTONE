@@ -15,6 +15,7 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -64,9 +65,9 @@ fun AppNavigation(navController: NavHostController) {
         composable("signup") { SignupScreen(navController) }
         composable("login") { LoginScreen(navController) }
         composable("home") { HomeScreen(navController) }
+        composable("pet_care") { DogAppUI() } // ✅ New route
     }
 }
-
 @Composable
 fun WelcomeScreen(navController: NavHostController) {
     Column(
@@ -457,8 +458,9 @@ fun HomeScreen(navController: NavHostController) {
         }
 
         // 🔹 Diet & Exercise Button
+        // 🔹 Diet & Exercise Button
         Button(
-            onClick = { Toast.makeText(context, "Diet & Exercise", Toast.LENGTH_SHORT).show() },
+            onClick = { navController.navigate("pet_care") }, // ✅ Navigate to PetCareScreen
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 8.dp),
@@ -473,6 +475,7 @@ fun HomeScreen(navController: NavHostController) {
             Spacer(modifier = Modifier.width(8.dp))
             Text("Diet & Exercise", color = Color.Black)
         }
+
 
         // 🔹 Contacts Button
         Button(
@@ -493,8 +496,175 @@ fun HomeScreen(navController: NavHostController) {
         }
     }
 }
+@Composable
+fun DogAppUI() {
+    Scaffold(
+        bottomBar = { BottomNavigationBar() }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .padding(padding)
+                .padding(16.dp)
+                .fillMaxSize()
+        ) {
+            // Profile Section
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Image(
+                    painter = painterResource(id = R.drawable.dogprof), // replace with your dog image
+                    contentDescription = "Dog Profile",
+                    modifier = Modifier
+                        .size(50.dp)
+                        .clip(CircleShape)
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Text("Bailey", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+            }
 
+            Spacer(modifier = Modifier.height(20.dp))
 
+            // Exercise Plan
+            Text("Exercise Plan", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5))
+            ) {
+                Column(Modifier.padding(12.dp)) {
+                    ExerciseItem("Walk", "30 mins", "Finished")
+                    Spacer(Modifier.height(10.dp))
+                    ExerciseItem("Play Fetch", "15 mins", "Ongoing")
+                }
+            }
 
+            Spacer(modifier = Modifier.height(20.dp))
 
+            // Meal Plan
+            Text("Meal Plan", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5))
+            ) {
+                Column(Modifier.padding(20.dp)) {
+                    MealItem("Breakfast", "8:00 AM")
+                    Spacer(Modifier.height(15.dp))
+                    MealItem("Lunch", "12:30 PM")
+                    Spacer(Modifier.height(15.dp))
+                    MealItem("Dinner", "6:00 PM")
+                    Spacer(Modifier.height(15.dp))
+                    MealItem("Dry Food", "120 g")
+                    Spacer(Modifier.height(15.dp))
+                }
+            }
+        }
+    }
+}
 
+@Composable
+fun ExerciseItem(name: String, duration: String, status: String) {
+    Row(
+        Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                painter = painterResource(id = R.drawable.walking), // replace with icons
+                contentDescription = name,
+                tint = Color.Black,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(Modifier.width(8.dp))
+            Column {
+                Text(name, fontWeight = FontWeight.Medium)
+                Text(duration, fontSize = 12.sp, color = Color.Gray)
+            }
+        }
+        Text(
+            text = status,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = if (status == "Finished") Color.Green else Color.Red
+        )
+    }
+}
+
+@Composable
+fun MealItem(name: String, time: String) {
+    Row(
+        Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                painter = painterResource(id = R.drawable.meal), // replace with meal icons
+                contentDescription = name,
+                tint = Color.Black,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(name, fontWeight = FontWeight.Medium)
+        }
+        Text(time, fontSize = 14.sp, color = Color.Gray)
+    }
+}
+@Composable
+fun BottomNavigationBar() {
+    NavigationBar(containerColor = Color.White) {
+        NavigationBarItem(
+            selected = true,
+            onClick = { /* TODO: Handle Home */ },
+            icon = {
+                Icon(
+                    painter = painterResource(id = R.drawable.home), // your home icon
+                    contentDescription = "Home"
+                )
+            }
+        )
+        NavigationBarItem(
+            selected = false,
+            onClick = { /* TODO: Handle Calendar */ },
+            icon = {
+                Icon(
+                    painter = painterResource(id = R.drawable.home), // your calendar icon
+                    contentDescription = "Calendar"
+                )
+            }
+        )
+        NavigationBarItem(
+            selected = false,
+            onClick = { /* TODO: Handle Notifications */ },
+            icon = {
+                Icon(
+                    painter = painterResource(id = R.drawable.home), // your notification icon
+                    contentDescription = "Notifications"
+                )
+            }
+        )
+        NavigationBarItem(
+            selected = false,
+            onClick = { /* TODO: Handle Profile */ },
+            icon = {
+                Icon(
+                    painter = painterResource(id = R.drawable.home), // your profile icon
+                    contentDescription = "Profile"
+                )
+            }
+        )
+        NavigationBarItem(
+            selected = false,
+            onClick = { /* TODO: Handle Settings */ },
+            icon = {
+                Icon(
+                    painter = painterResource(id = R.drawable.home), // your settings icon
+                    contentDescription = "Settings"
+                )
+            }
+        )
+    }
+}
