@@ -13,7 +13,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -62,6 +64,7 @@ fun AppNavigation(navController: NavHostController) {
         composable("login") { LoginScreen(navController) }
         composable("home") { HomeScreen(navController) }
         composable("meal") { DogAppUI(navController) }
+        composable("petlist") { PetListScreen(navController) }
         composable("contacts") { ContactsScreen(navController) }   // <-- new route
     }
 }
@@ -312,9 +315,7 @@ fun SignupScreen(navController: NavHostController) {
     }
 }
 
-/* ---------------------------------------------------------
-   HOME SCREEN
---------------------------------------------------------- */
+
 @Composable
 fun HomeScreen(navController: NavHostController) {
     val context = LocalContext.current
@@ -370,7 +371,7 @@ fun HomeScreen(navController: NavHostController) {
         }
 
         Button(
-            onClick = {navController.navigate("meal")},
+            onClick = {navController.navigate("petlist")},
             modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
             shape = RoundedCornerShape(16.dp),
             colors = ButtonDefaults.buttonColors(containerColor = Color(0xCED4DA))
@@ -576,6 +577,115 @@ fun ContactCard(name: String, role: String, phone: String) {
         ) {
             Text("Number", fontSize = 14.sp, color = Color.Gray, modifier = Modifier.weight(1f))
             Text(phone, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+        }
+    }
+}
+@Composable
+fun PetListScreen(navController: NavHostController) {
+    val context = LocalContext.current
+    Scaffold(
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { Toast.makeText(context, "Add new pet clicked", Toast.LENGTH_SHORT).show() },
+                containerColor = Color.White,
+                contentColor = Color.Black,
+                shape = CircleShape,
+                elevation = FloatingActionButtonDefaults.elevation(4.dp)
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Add Pet")
+            }
+        },
+        containerColor = Color.White
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize()
+                .padding(horizontal = 24.dp, vertical = 16.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(
+                    onClick = { navController.popBackStack() },
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(Color(0xFFF5F5F5), shape = CircleShape)
+                ) {
+                    Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.Black)
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Row(
+                    modifier = Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.icon_logo),
+                        contentDescription = "FitFurs Logo",
+                        modifier = Modifier.size(32.dp)
+                    )
+                    Text(" Pets ", fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                    Image(
+                        painter = painterResource(id = R.drawable.dog),
+                        contentDescription = "Pet Icon",
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(32.dp))
+            Text("Choose a pet", fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = Color.Black)
+            Spacer(modifier = Modifier.height(16.dp))
+            PetCard("Choco", R.drawable.dog1, context,navController)
+            Spacer(modifier = Modifier.height(12.dp))
+            PetCard("Coco", R.drawable.dog2, context, navController)
+            Spacer(modifier = Modifier.height(12.dp))
+            PetCard("Bailey", R.drawable.dog3, context, navController)
+        }
+    }
+}
+//tugs
+@Composable
+fun PetCard(petName: String, petImage: Int, context: Context, navController: NavHostController) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable {
+                when (petName) {
+                    "Choco" -> navController.navigate("meal")
+                    "Coco" -> navController.navigate("meal")
+                    "Bailey" -> navController.navigate("meal")
+                }
+            },
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(horizontal = 12.dp, vertical = 8.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Image(
+                painter = painterResource(id = petImage),
+                contentDescription = petName,
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                petName,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color.Black,
+                modifier = Modifier.weight(1f)
+            )
+            Icon(Icons.Default.ArrowForward, contentDescription = "Next", tint = Color.Black)
         }
     }
 }
