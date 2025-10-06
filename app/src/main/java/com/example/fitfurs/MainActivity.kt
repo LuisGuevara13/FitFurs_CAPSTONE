@@ -532,7 +532,7 @@ fun DogAppUI(navController: NavHostController) {
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Exercise Plan
+
             Text("Exercise Plan", fontSize = 18.sp, fontWeight = FontWeight.Bold)
             Card(
                 modifier = Modifier
