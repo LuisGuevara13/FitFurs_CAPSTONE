@@ -647,7 +647,7 @@ fun PetListScreen(navController: NavHostController) {
         }
     }
 }
-//tugs
+
 @Composable
 fun PetCard(petName: String, petImage: Int, context: Context, navController: NavHostController) {
     Card(
