@@ -147,7 +147,7 @@ fun WelcomeScreen(navController: NavHostController) {
         }
     }
 }
-
+//lol
 @Composable
 fun LoginScreen(navController: NavHostController) {
     var email by remember { mutableStateOf("") }
