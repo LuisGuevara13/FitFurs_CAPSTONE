@@ -61,6 +61,7 @@ fun AppNavigation(navController: NavHostController) {
         composable("signup") { SignupScreen(navController) }
         composable("login") { LoginScreen(navController) }
         composable("home") { HomeScreen(navController) }
+        composable("meal") { DogAppUI(navController) }
         composable("contacts") { ContactsScreen(navController) }   // <-- new route
     }
 }
@@ -369,7 +370,7 @@ fun HomeScreen(navController: NavHostController) {
         }
 
         Button(
-            onClick = { Toast.makeText(context, "Diet & Exercise", Toast.LENGTH_SHORT).show() },
+            onClick = {navController.navigate("meal")},
             modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
             shape = RoundedCornerShape(16.dp),
             colors = ButtonDefaults.buttonColors(containerColor = Color(0xCED4DA))
@@ -425,6 +426,134 @@ fun ContactsScreen(navController: NavHostController) {
             Spacer(Modifier.height(12.dp))
             ContactCard("Dr. Ben Dover", "Veterinarian", "+63-999-999-9999")
         }
+    }
+}
+
+@Composable
+fun DogAppUI(navController: NavHostController) {
+    Scaffold(
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .padding(padding)
+                .padding(16.dp)
+                .fillMaxSize()
+        ) {
+            // ✅ Back Button added here
+            IconButton(
+                onClick = { navController.popBackStack() },
+                modifier = Modifier.align(Alignment.Start)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ArrowBack,
+                    contentDescription = "Back"
+                )
+            }
+
+            // Profile Section
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Image(
+                    painter = painterResource(id = R.drawable.dogprof),
+                    contentDescription = "Dog Profile",
+                    modifier = Modifier
+                        .size(50.dp)
+                        .clip(CircleShape)
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Text("Bailey", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+
+            Text("Exercise Plan", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5))
+            ) {
+                Column(Modifier.padding(12.dp)) {
+                    ExerciseItem("Walk", "30 mins", "Finished")
+                    Spacer(Modifier.height(10.dp))
+                    ExerciseItem("Play Fetch", "15 mins", "Ongoing")
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Meal Plan
+            Text("Meal Plan", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5))
+            ) {
+                Column(Modifier.padding(20.dp)) {
+                    MealItem("Breakfast", "8:00 AM")
+                    Spacer(Modifier.height(15.dp))
+                    MealItem("Lunch", "12:30 PM")
+                    Spacer(Modifier.height(15.dp))
+                    MealItem("Dinner", "6:00 PM")
+                    Spacer(Modifier.height(15.dp))
+                    MealItem("Dry Food", "120 g")
+                    Spacer(Modifier.height(15.dp))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ExerciseItem(name: String, duration: String, status: String) {
+    Row(
+        Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                painter = painterResource(id = R.drawable.walking), // replace with icons
+                contentDescription = name,
+                tint = Color.Black,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(Modifier.width(8.dp))
+            Column {
+                Text(name, fontWeight = FontWeight.Medium)
+                Text(duration, fontSize = 12.sp, color = Color.Gray)
+            }
+        }
+        Text(
+            text = status,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = if (status == "Finished") Color.Green else Color.Red
+        )
+    }
+}
+
+@Composable
+fun MealItem(name: String, time: String) {
+    Row(
+        Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                painter = painterResource(id = R.drawable.meal), // replace with meal icons
+                contentDescription = name,
+                tint = Color.Black,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(name, fontWeight = FontWeight.Medium)
+        }
+        Text(time, fontSize = 14.sp, color = Color.Gray)
     }
 }
 
