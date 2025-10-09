@@ -341,7 +341,7 @@ fun HomeScreen(navController: NavHostController) {
                 Icon(Icons.Default.Settings, contentDescription = "Settings")
             }
         }
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(55.dp))
 
         Row(
             modifier = Modifier.padding(top = 24.dp).fillMaxWidth(),
@@ -351,52 +351,53 @@ fun HomeScreen(navController: NavHostController) {
             Image(
                 painter = painterResource(id = R.drawable.ico1),
                 contentDescription = "Pet Illustration",
-                modifier = Modifier.size(60.dp),
+                modifier = Modifier.size(75.dp),
                 contentScale = ContentScale.Fit
             )
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Pet Overview", fontSize = 26.sp, fontWeight = FontWeight.Bold)
+            Text("Pet Overview", fontSize = 35.sp, fontWeight = FontWeight.Bold)
         }
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(60.dp))
 
         Button(
             onClick = { Toast.makeText(context, "Medical Tracking", Toast.LENGTH_SHORT).show() },
-            modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp),
+            modifier = Modifier.width(380.dp).height(75.dp),
             shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF5F5F5))
+
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD3D3D3))
         ) {
             Icon(painter = painterResource(id = R.drawable.icon2), contentDescription = "Medical", tint = Color.Black)
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Medical Tracking", color = Color.Black)
+            Text("Medical Tracking", color = Color.Black, fontSize = 23.sp)
         }
+
+        Spacer(modifier = Modifier.height(25.dp))
 
         Button(
             onClick = {navController.navigate("petlist")},
-            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+            modifier = Modifier.width(380.dp).height(75.dp),
             shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xCED4DA))
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD3D3D3))
         ) {
             Icon(painter = painterResource(id = R.drawable.icon3), contentDescription = "Exercise", tint = Color.Black)
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Diet & Exercise", color = Color.Black)
+            Text("Diet & Exercise", color = Color.Black, fontSize = 23.sp)
         }
-
+        Spacer(modifier = Modifier.height(25.dp))
         Button(
-            onClick = { navController.navigate("contacts") },   // navigate to contacts
-            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+            onClick = { navController.navigate("contacts") },
+            modifier = Modifier.width(380.dp).height(75.dp),
             shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF5F5F5))
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD3D3D3))
         ) {
             Icon(painter = painterResource(id = R.drawable.icon4), contentDescription = "Contacts", tint = Color.Black)
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Contacts", color = Color.Black)
+            Text("Contacts", color = Color.Black, fontSize = 23.sp)
         }
     }
 }
 
-/* ---------------------------------------------------------
-   CONTACTS SCREEN
---------------------------------------------------------- */
+
 @Composable
 fun ContactsScreen(navController: NavHostController) {
     Scaffold(
