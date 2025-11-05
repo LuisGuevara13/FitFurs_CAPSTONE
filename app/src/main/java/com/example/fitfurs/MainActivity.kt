@@ -577,7 +577,7 @@ fun PetActivityScreen(navController: NavHostController, username: String, petId:
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
-                    // ✅ Go to a new screen for adding meals/exercises
+
                     navController.navigate("add_activity/$username/$petId")
                 },
                 containerColor = Color.Black,
@@ -603,7 +603,7 @@ fun PetActivityScreen(navController: NavHostController, username: String, petId:
                     .padding(16.dp)
                     .verticalScroll(rememberScrollState())
             ) {
-                // 🐶 Pet Header
+
                 Image(
                     painter = painterResource(R.drawable.dog1),
                     contentDescription = "Pet Image",
@@ -616,7 +616,7 @@ fun PetActivityScreen(navController: NavHostController, username: String, petId:
                 Text(petName ?: "Unknown Pet", fontSize = 22.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(24.dp))
 
-                // 🍽️ Meal List
+
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
@@ -694,7 +694,6 @@ fun AddActivityScreen(navController: NavHostController, username: String, petId:
                 .verticalScroll(rememberScrollState())
         ) {
 
-            // 🍽️ Meal Form
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
