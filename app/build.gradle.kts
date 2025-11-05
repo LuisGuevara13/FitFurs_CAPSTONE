@@ -56,6 +56,7 @@ dependencies {
     implementation("com.google.firebase:firebase-firestore")
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-analytics")
+
     // ✅ Jetpack Compose BOM
     val composeBom = platform("androidx.compose:compose-bom:2024.05.00")
     implementation(composeBom)

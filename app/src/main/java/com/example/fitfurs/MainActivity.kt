@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
@@ -45,9 +44,18 @@ import androidx.navigation.compose.rememberNavController
 import com.example.fitfurs.ui.theme.FitFursTheme
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
-import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.vector.ImageVector
+import java.util.Timer
+import java.util.TimerTask
+import android.os.Handler
+import android.os.Looper
+import android.util.Log
+import androidx.compose.material.icons.*
+import androidx.compose.material.icons.filled.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import kotlinx.coroutines.tasks.await
 
 
 class MainActivity : ComponentActivity() {
@@ -57,6 +65,7 @@ class MainActivity : ComponentActivity() {
             val navController = rememberNavController()
             FitFursTheme {
                 AppNavigation(navController)
+
             }
         }
     }
@@ -82,9 +91,20 @@ fun AppNavigation(navController: NavHostController) {
             val username = backStackEntry.arguments?.getString("username") ?: ""
             PetBMI(navController, username)
         }
+        composable("pet_activity/{username}/{petId}") { backStackEntry ->
+            val username = backStackEntry.arguments?.getString("username") ?: ""
+            val petId = backStackEntry.arguments?.getString("petId") ?: ""
+            PetActivityScreen(navController, username, petId)
+        }
+        composable("add_activity/{username}/{petId}") { backStackEntry ->
+            val username = backStackEntry.arguments?.getString("username") ?: ""
+            val petId = backStackEntry.arguments?.getString("petId") ?: ""
+            AddActivityScreen(navController, username, petId)
+        }
+
         composable("contacts") { ContactsScreen(navController) }
-        composable("meal") { DogAppUI(navController) }
         composable("settings") { SettingsScreen(navController) }
+
     }
 }
 
@@ -483,154 +503,296 @@ fun ContactsScreen(navController: NavHostController) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DogAppUI(navController: NavHostController) {
+fun PetActivityScreen(navController: NavHostController, username: String, petId: String) {
+    val db = FirebaseFirestore.getInstance()
+    val context = LocalContext.current
+
+    var petName by remember { mutableStateOf<String?>(null) }
+    var isLoading by remember { mutableStateOf(true) }
+
+    var mealList by remember { mutableStateOf<List<Map<String, Any>>>(emptyList()) }
+    var exerciseList by remember { mutableStateOf<List<Map<String, Any>>>(emptyList()) }
+
+    DisposableEffect(username, petId) {
+        val registration = db.collection("users")
+            .document(username)
+            .collection("pets")
+            .document(petId)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    Toast.makeText(context, "Failed to load pet: ${error.message}", Toast.LENGTH_SHORT).show()
+                    isLoading = false
+                    return@addSnapshotListener
+                }
+                petName = snapshot?.getString("petName") ?: "Unknown Pet"
+                isLoading = false
+            }
+        onDispose { registration.remove() }
+    }
+
+    DisposableEffect(Unit) {
+        val mealReg = db.collection("users").document(username)
+            .collection("pets").document(petId)
+            .collection("mealtime")
+            .addSnapshotListener { snap, err ->
+                if (err == null && snap != null) {
+                    mealList = snap.documents.mapNotNull { it.data }
+                }
+            }
+        onDispose { mealReg.remove() }
+    }
+
+    DisposableEffect(Unit) {
+        val exReg = db.collection("users").document(username)
+            .collection("pets").document(petId)
+            .collection("exercises")
+            .addSnapshotListener { snap, err ->
+                if (err == null && snap != null) {
+                    exerciseList = snap.documents.mapNotNull { it.data }
+                }
+            }
+        onDispose { exReg.remove() }
+    }
+
     Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = petName?.let { "$it's Activity" } ?: "Loading...",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = Color.Black
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.Black)
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+            )
+        },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = {
+                    // ✅ Go to a new screen for adding meals/exercises
+                    navController.navigate("add_activity/$username/$petId")
+                },
+                containerColor = Color.Black,
+                contentColor = Color.White
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Add")
+            }
+        },
+        containerColor = Color(0xFFF5F5F5)
+    ) { padding ->
+        if (isLoading) {
+            Box(
+                modifier = Modifier.fillMaxSize().padding(padding),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+        } else {
+            Column(
+                modifier = Modifier
+                    .padding(padding)
+                    .fillMaxSize()
+                    .padding(16.dp)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                // 🐶 Pet Header
+                Image(
+                    painter = painterResource(R.drawable.dog1),
+                    contentDescription = "Pet Image",
+                    modifier = Modifier
+                        .size(120.dp)
+                        .clip(CircleShape)
+                        .background(Color.White)
+                )
+                Spacer(Modifier.height(16.dp))
+                Text(petName ?: "Unknown Pet", fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(24.dp))
+
+                // 🍽️ Meal List
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White)
+                ) {
+                    Column(Modifier.padding(16.dp)) {
+                        Text("Meal Plans", fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                        Spacer(Modifier.height(8.dp))
+                        if (mealList.isEmpty()) {
+                            Text("No meals yet.", color = Color.Gray)
+                        } else {
+                            mealList.forEach { meal ->
+                                Text("🍽 ${meal["meal"]} - ${meal["time"]} (${meal["amount"]})")
+                            }
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(24.dp))
+
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White)
+                ) {
+                    Column(Modifier.padding(16.dp)) {
+                        Text("Exercises", fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                        Spacer(Modifier.height(8.dp))
+                        if (exerciseList.isEmpty()) {
+                            Text("No exercises yet.", color = Color.Gray)
+                        } else {
+                            exerciseList.forEach { ex ->
+                                Text("🏃 ${ex["name"]} - ${ex["duration"]}s (${ex["status"] ?: "N/A"})")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AddActivityScreen(navController: NavHostController, username: String, petId: String) {
+    val db = FirebaseFirestore.getInstance()
+    val context = LocalContext.current
+
+    var meal by remember { mutableStateOf("") }
+    var time by remember { mutableStateOf("") }
+    var amount by remember { mutableStateOf("") }
+
+    var exName by remember { mutableStateOf("") }
+    var exDuration by remember { mutableStateOf("") }
+    var exStatus by remember { mutableStateOf("") }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Add Activity") },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                }
+            )
+        },
+        containerColor = Color(0xFFF5F5F5)
     ) { padding ->
         Column(
             modifier = Modifier
+                .fillMaxSize()
                 .padding(padding)
                 .padding(16.dp)
-                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
         ) {
-            IconButton(
-                onClick = { navController.popBackStack() },
-                modifier = Modifier.align(Alignment.Start)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.ArrowBack,
-                    contentDescription = "Back"
-                )
-            }
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Image(
-                    painter = painterResource(id = R.drawable.dogprof),
-                    contentDescription = "Dog Profile",
-                    modifier = Modifier
-                        .size(50.dp)
-                        .clip(CircleShape)
-                )
-                Spacer(modifier = Modifier.width(10.dp))
-                Text("Bailey", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-            }
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            Text("Exercise Plan", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            // 🍽️ Meal Form
             Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5))
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White)
             ) {
-                Column(Modifier.padding(12.dp)) {
-                    ExerciseItem("Walk", "30 mins", "Finished")
-                    Spacer(Modifier.height(10.dp))
-                    ExerciseItem("Play Fetch", "15 mins", "Ongoing")
+                Column(Modifier.padding(16.dp)) {
+                    Text("Add Meal", fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(value = meal, onValueChange = { meal = it }, label = { Text("Meal Name") })
+                    OutlinedTextField(value = time, onValueChange = { time = it }, label = { Text("Time (e.g. 7:00 AM)") })
+                    OutlinedTextField(value = amount, onValueChange = { amount = it }, label = { Text("Amount") })
+                    Spacer(Modifier.height(8.dp))
+                    Button(
+                        onClick = {
+                            if (meal.isNotEmpty() && time.isNotEmpty() && amount.isNotEmpty()) {
+                                db.collection("users").document(username)
+                                    .collection("pets").document(petId)
+                                    .collection("mealtime").add(
+                                        mapOf("meal" to meal, "time" to time, "amount" to amount)
+                                    )
+                                    .addOnSuccessListener {
+                                        Toast.makeText(context, "Meal added!", Toast.LENGTH_SHORT).show()
+                                        meal = ""; time = ""; amount = ""
+                                    }
+                            } else Toast.makeText(context, "Fill all meal fields", Toast.LENGTH_SHORT).show()
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Black)
+                    ) {
+                        Text("Add Meal", color = Color.White)
+                    }
                 }
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(Modifier.height(24.dp))
 
-            Text("Meal Plan", fontSize = 18.sp, fontWeight = FontWeight.Bold)
             Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5))
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White)
             ) {
-                Column(Modifier.padding(20.dp)) {
-                    MealItem("Breakfast", "8:00 AM")
-                    Spacer(Modifier.height(15.dp))
-                    MealItem("Lunch", "12:30 PM")
-                    Spacer(Modifier.height(15.dp))
-                    MealItem("Dinner", "6:00 PM")
-                    Spacer(Modifier.height(15.dp))
-                    MealItem("Dry Food", "120 g")
-                    Spacer(Modifier.height(15.dp))
+                Column(Modifier.padding(16.dp)) {
+                    Text("Add Exercise", fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(value = exName, onValueChange = { exName = it }, label = { Text("Exercise Name") })
+                    OutlinedTextField(value = exDuration, onValueChange = { exDuration = it }, label = { Text("Duration (minutes)") })
+                    OutlinedTextField(value = exStatus, onValueChange = { exStatus = it }, label = { Text("Status") })
+                    Spacer(Modifier.height(8.dp))
+                    Button(
+                        onClick = {
+                            if (exName.isNotEmpty() && exDuration.isNotEmpty()) {
+                                db.collection("users").document(username)
+                                    .collection("pets").document(petId)
+                                    .collection("exercises").add(
+                                        mapOf("name" to exName, "duration" to exDuration, "status" to exStatus)
+                                    )
+                                    .addOnSuccessListener {
+                                        Toast.makeText(context, "Exercise added!", Toast.LENGTH_SHORT).show()
+                                        exName = ""; exDuration = ""; exStatus = ""
+                                    }
+                            } else Toast.makeText(context, "Fill all exercise fields", Toast.LENGTH_SHORT).show()
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Black)
+                    ) {
+                        Text("Add Exercise", color = Color.White)
+                    }
                 }
             }
         }
     }
 }
 
-@Composable
-fun ExerciseItem(name: String, duration: String, status: String) {
-    Row(
-        Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                painter = painterResource(id = R.drawable.walking),
-                contentDescription = name,
-                tint = Color.Black,
-                modifier = Modifier.size(24.dp)
-            )
-            Spacer(Modifier.width(8.dp))
-            Column {
-                Text(name, fontWeight = FontWeight.Medium)
-                Text(duration, fontSize = 12.sp, color = Color.Gray)
-            }
-        }
-        Text(
-            text = status,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = if (status == "Finished") Color.Green else Color.Red
-        )
-    }
-}
 
-@Composable
-fun MealItem(name: String, time: String) {
-    Row(
-        Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                painter = painterResource(id = R.drawable.meal),
-                contentDescription = name,
-                tint = Color.Black,
-                modifier = Modifier.size(24.dp)
-            )
-            Spacer(Modifier.width(8.dp))
-            Text(name, fontWeight = FontWeight.Medium)
-        }
-        Text(time, fontSize = 14.sp, color = Color.Gray)
-    }
-}
 
-@Composable
-fun ContactCard(name: String, role: String, phone: String) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .shadow(2.dp, RoundedCornerShape(16.dp))
-            .background(Color.White, RoundedCornerShape(16.dp))
-            .padding(16.dp)
-    ) {
-        Text(name, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
-        Text(role, fontSize = 14.sp, color = Color.Gray)
-        Spacer(Modifier.height(8.dp))
-        Row(
+
+    @Composable
+    fun ContactCard(name: String, role: String, phone: String) {
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color(0xFFF0F0F0), RoundedCornerShape(12.dp))
-                .padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .shadow(2.dp, RoundedCornerShape(16.dp))
+                .background(Color.White, RoundedCornerShape(16.dp))
+                .padding(16.dp)
         ) {
-            Text("Number", fontSize = 14.sp, color = Color.Gray, modifier = Modifier.weight(1f))
-            Text(phone, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+            Text(name, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+            Text(role, fontSize = 14.sp, color = Color.Gray)
+            Spacer(Modifier.height(8.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color(0xFFF0F0F0), RoundedCornerShape(12.dp))
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Number", fontSize = 14.sp, color = Color.Gray, modifier = Modifier.weight(1f))
+                Text(phone, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+            }
         }
     }
-}
 
 @Composable
 fun PetListScreen(navController: NavHostController, username: String) {
@@ -638,18 +800,27 @@ fun PetListScreen(navController: NavHostController, username: String) {
     var pets by remember { mutableStateOf<List<Map<String, Any>>>(emptyList()) }
     val context = LocalContext.current
 
-    // snapshot listener with proper disposal
     DisposableEffect(username) {
-        val registration: ListenerRegistration = db.collection("users")
+        val registration = db.collection("users")
             .document(username)
             .collection("pets")
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
-                    Toast.makeText(context, "Failed to load pets: ${error.message}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(
+                        context,
+                        "Failed to load pets: ${error.message}",
+                        Toast.LENGTH_SHORT
+                    ).show()
                     return@addSnapshotListener
                 }
-                pets = snapshot?.documents?.mapNotNull { it.data } ?: emptyList()
+
+                pets = snapshot?.documents?.map { doc ->
+                    val data = doc.data?.toMutableMap() ?: mutableMapOf()
+                    data["id"] = doc.id  // ✅ include document ID
+                    data
+                } ?: emptyList()
             }
+
         onDispose { registration.remove() }
     }
 
@@ -675,74 +846,78 @@ fun PetListScreen(navController: NavHostController, username: String) {
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = { navController.popBackStack() }) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.Black)
+                    Icon(
+                        Icons.Default.ArrowBack,
+                        contentDescription = "Back",
+                        tint = Color.Black
+                    )
                 }
                 Spacer(Modifier.width(8.dp))
                 Text("Your Pets", fontSize = 24.sp, fontWeight = FontWeight.Bold)
             }
+
             Spacer(modifier = Modifier.height(16.dp))
 
             if (pets.isEmpty()) {
                 Text("No pets yet. Add one!", color = Color.Gray)
             } else {
                 pets.forEach { pet ->
+                    val petName = pet["petName"]?.toString() ?: "Unnamed Pet"
+                    val petId = pet["id"]?.toString() ?: "" // ✅ document ID
+
                     PetCard(
-                        petName = pet["breed"]?.toString() ?: "Unnamed Pet",
+                        petName = petName,
                         petImage = R.drawable.dog1,
-                        context = LocalContext.current,
-                        navController = navController
+                        context = context,
+                        navController = navController,
+                        onClick = {
+                            navController.navigate("pet_activity/$username/$petId")
+                        }
                     )
+
                     Spacer(Modifier.height(12.dp))
                 }
             }
         }
     }
 }
-
 @Composable
-fun PetCard(petName: String, petImage: Int, context: Context, navController: NavHostController) {
+fun PetCard(
+    petName: String,
+    petImage: Int,
+    context: Context,
+    navController: NavHostController,
+    onClick: () -> Unit
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable {
-                navController.navigate("meal")
-            },
+            .clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        elevation = CardDefaults.cardElevation(4.dp)
     ) {
         Row(
-            modifier = Modifier
-                .padding(horizontal = 12.dp, vertical = 8.dp)
-                .fillMaxWidth(),
+            modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Image(
                 painter = painterResource(id = petImage),
                 contentDescription = petName,
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
+                modifier = Modifier.size(64.dp)
             )
-            Spacer(modifier = Modifier.width(12.dp))
-            Text(
-                petName,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Medium,
-                color = Color.Black,
-                modifier = Modifier.weight(1f)
-            )
-            Icon(Icons.Default.ArrowForward, contentDescription = "Next", tint = Color.Black)
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(petName, fontSize = 20.sp, fontWeight = FontWeight.Bold)
         }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PetBMI(navController: NavHostController, userId: String)  {
+fun PetBMI(navController: NavHostController, userId: String) {
     val db = FirebaseFirestore.getInstance()
     val context = LocalContext.current
 
+    var petName by remember { mutableStateOf("") }
     var species by remember { mutableStateOf("") }
     var breed by remember { mutableStateOf("") }
     var age by remember { mutableStateOf("") }
@@ -768,8 +943,15 @@ fun PetBMI(navController: NavHostController, userId: String)  {
             verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            OutlinedTextField(
+                value = petName,
+                onValueChange = { petName = it },
+                label = { Text("Pet Name") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
 
-            // Input Fields
             OutlinedTextField(
                 value = species,
                 onValueChange = { species = it },
@@ -808,10 +990,15 @@ fun PetBMI(navController: NavHostController, userId: String)  {
             )
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Image upload placeholder
             Text("Insert picture of your pet", fontSize = 14.sp, color = Color.Gray)
             OutlinedButton(
-                onClick = { Toast.makeText(context, "Upload not yet available", Toast.LENGTH_SHORT).show() },
+                onClick = {
+                    Toast.makeText(
+                        context,
+                        "Upload not yet available",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Choose Files")
@@ -819,13 +1006,14 @@ fun PetBMI(navController: NavHostController, userId: String)  {
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Save Button
             Button(
                 onClick = {
-                    if (species.isBlank() || breed.isBlank() || age.isBlank() || weight.isBlank()) {
-                        Toast.makeText(context, "Please fill in all fields", Toast.LENGTH_SHORT).show()
+                    if (petName.isBlank() || species.isBlank() || breed.isBlank() || age.isBlank() || weight.isBlank()) {
+                        Toast.makeText(context, "Please fill in all fields", Toast.LENGTH_SHORT)
+                            .show()
                     } else {
                         val petData = hashMapOf(
+                            "petName" to petName,
                             "species" to species,
                             "breed" to breed,
                             "age" to age,
@@ -837,13 +1025,21 @@ fun PetBMI(navController: NavHostController, userId: String)  {
                             .collection("pets")
                             .add(petData)
                             .addOnSuccessListener {
-                                Toast.makeText(context, "Form submitted successfully!", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(
+                                    context,
+                                    "Form submitted successfully!",
+                                    Toast.LENGTH_SHORT
+                                ).show()
                                 navController.navigate("home/$userId") {
                                     popUpTo("bmi_form/$userId") { inclusive = true }
                                 }
                             }
                             .addOnFailureListener {
-                                Toast.makeText(context, "Error: ${it.message}", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(
+                                    context,
+                                    "Error: ${it.message}",
+                                    Toast.LENGTH_SHORT
+                                ).show()
                             }
                     }
                 },
@@ -858,84 +1054,92 @@ fun PetBMI(navController: NavHostController, userId: String)  {
         }
     }
 }
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun SettingsScreen(navController: NavHostController) {
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Settings", fontWeight = FontWeight.Bold, fontSize = 22.sp) },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                }
-            )
-        }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .padding(innerPadding)
-                .fillMaxSize()
-                .padding(horizontal = 24.dp, vertical = 16.dp)
-        ) {
-            SettingItem(
-                icon = Icons.Default.Person,
-                title = "Account",
-                onClick = { /* Navigate to Account settings */ }
-            )
-            SettingItem(
-                icon = Icons.Default.Notifications,
-                title = "Notification",
-                onClick = { /* Navigate to Notification settings */ }
-            )
-            SettingItem(
-                icon = Icons.Default.Visibility,
-                title = "Appearance",
-                onClick = { /* Navigate to Appearance settings */ }
-            )
-            SettingItem(
-                icon = Icons.Default.Security,
-                title = "Privacy & Security",
-                onClick = { /* Navigate to Privacy settings */ }
-            )
-            SettingItem(
-                icon = Icons.Default.Language,
-                title = "Logout",
-                onClick = {
-                    navController.navigate("login") {
-                        popUpTo("home") { inclusive = true }
-                    }
-                }
-            )
-        }
-    }
-}
 
-@Composable
-fun SettingItem(
-    icon: ImageVector,
-    title: String,
-    onClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() }
-            .padding(vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(icon, contentDescription = title, modifier = Modifier.size(24.dp))
-        Spacer(modifier = Modifier.width(16.dp))
-        Text(
-            text = title,
-            fontSize = 18.sp,
-            modifier = Modifier.weight(1f)
-        )
-        Icon(
-            imageVector = Icons.Default.ChevronRight,
-            contentDescription = "Go to $title",
-            modifier = Modifier.size(20.dp)
-        )
+
+@OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    fun SettingsScreen(navController: NavHostController) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("Settings", fontWeight = FontWeight.Bold, fontSize = 22.sp) },
+                    navigationIcon = {
+                        IconButton(onClick = { navController.popBackStack() }) {
+                            Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        }
+                    }
+                )
+            }
+        ) { innerPadding ->
+            Column(
+                modifier = Modifier
+                    .padding(innerPadding)
+                    .fillMaxSize()
+                    .padding(horizontal = 24.dp, vertical = 16.dp)
+            ) {
+                SettingItem(
+                    icon = Icons.Default.Person,
+                    title = "Account",
+                    onClick = { /* Navigate to Account settings */ }
+                )
+                SettingItem(
+                    icon = Icons.Default.Notifications,
+                    title = "Notification",
+                    onClick = { /* Navigate to Notification settings */ }
+                )
+                SettingItem(
+                    icon = Icons.Default.Visibility,
+                    title = "Appearance",
+                    onClick = { /* Navigate to Appearance settings */ }
+                )
+                SettingItem(
+                    icon = Icons.Default.Security,
+                    title = "Privacy & Security",
+                    onClick = { /* Navigate to Privacy settings */ }
+                )
+                SettingItem(
+                    icon = Icons.Default.Language,
+                    title = "Logout",
+                    onClick = {
+                        navController.navigate("login") {
+                            popUpTo("home") { inclusive = true }
+                        }
+                    }
+                )
+            }
+        }
     }
-}
+
+    @Composable
+    fun SettingItem(
+        icon: ImageVector,
+        title: String,
+        onClick: () -> Unit
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onClick() }
+                .padding(vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(icon, contentDescription = title, modifier = Modifier.size(24.dp))
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(
+                text = title,
+                fontSize = 18.sp,
+                modifier = Modifier.weight(1f)
+            )
+            Icon(
+                imageVector = Icons.Default.ChevronRight,
+                contentDescription = "Go to $title",
+                modifier = Modifier.size(20.dp)
+            )
+        }
+    }
+
+
+
+
+
+
