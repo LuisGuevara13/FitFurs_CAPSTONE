@@ -577,7 +577,6 @@ fun PetActivityScreen(navController: NavHostController, username: String, petId:
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
-
                     navController.navigate("add_activity/$username/$petId")
                 },
                 containerColor = Color.Black,
