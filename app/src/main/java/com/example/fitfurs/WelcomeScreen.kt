@@ -1,0 +1,92 @@
+package com.example.fitfurs
+
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.navigation.NavHostController
+import androidx.compose.runtime.Composable
+
+@Composable
+fun WelcomeScreen(navController: NavHostController) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.SpaceBetween
+    ) {
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(
+                painter = painterResource(id = R.drawable.icon_logo),
+                contentDescription = "App Logo",
+                tint = Color.Black,
+                modifier = Modifier.size(48.dp)
+            )
+            Text(text = "FitFurs", fontSize = 28.sp, fontWeight = FontWeight.Bold)
+        }
+
+        Image(
+            painter = painterResource(id = R.drawable.dog),
+            contentDescription = "Dog Image",
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(200.dp)
+                .background(Color.LightGray, shape = RoundedCornerShape(12.dp))
+        )
+
+        Text(
+            text = buildAnnotatedString {
+                withStyle(
+                    SpanStyle(fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                ) { append("Pet Care Service for Your ") }
+                withStyle(
+                    SpanStyle(fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
+                ) { append("Best Friend.") }
+            },
+            modifier = Modifier.padding(vertical = 16.dp)
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            OutlinedButton(
+                onClick = { navController.navigate("login") },
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(end = 8.dp),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text("Login")
+            }
+
+            Button(
+                onClick = { navController.navigate("signup") },
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 8.dp),
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Black)
+            ) {
+                Text("Sign Up", color = Color.White)
+            }
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+    }
+}
