@@ -37,6 +37,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PetActivityScreen(navController: NavHostController, username: String, petId: String) {
@@ -52,20 +53,14 @@ fun PetActivityScreen(navController: NavHostController, username: String, petId:
 
     // --- Load Pet Info ---
     DisposableEffect(username, petId) {
-        val registration = db.collection("users")
-            .document(username)
-            .collection("pets")
-            .document(petId)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    Toast.makeText(context, "Failed to load pet: ${error.message}", Toast.LENGTH_SHORT).show()
-                    isLoading = false
-                    return@addSnapshotListener
-                }
+        val reg = db.collection("users").document(username)
+            .collection("pets").document(petId)
+            .addSnapshotListener { snapshot, e ->
+                if (e != null) return@addSnapshotListener
                 petName = snapshot?.getString("petName") ?: "Unknown Pet"
                 isLoading = false
             }
-        onDispose { registration.remove() }
+        onDispose { reg.remove() }
     }
 
     // --- Load Meals ---
@@ -76,7 +71,7 @@ fun PetActivityScreen(navController: NavHostController, username: String, petId:
             .addSnapshotListener { snap, err ->
                 if (err == null && snap != null) {
                     mealList.clear()
-                    mealList.addAll(snap.documents.mapNotNull { doc -> doc.id to (doc.data ?: emptyMap()) })
+                    mealList.addAll(snap.documents.mapNotNull { it.id to (it.data ?: emptyMap()) })
                 }
             }
         onDispose { mealReg.remove() }
@@ -84,15 +79,13 @@ fun PetActivityScreen(navController: NavHostController, username: String, petId:
 
     // --- Load Exercises ---
     DisposableEffect(Unit) {
-        val exReg = db.collection("users")
-            .document(username)
-            .collection("pets")
-            .document(petId.lowercase())
+        val exReg = db.collection("users").document(username)
+            .collection("pets").document(petId.lowercase())
             .collection("exercise")
             .addSnapshotListener { snap, err ->
                 if (err == null && snap != null) {
                     exerciseList.clear()
-                    exerciseList.addAll(snap.documents.mapNotNull { doc -> doc.id to (doc.data ?: emptyMap()) })
+                    exerciseList.addAll(snap.documents.mapNotNull { it.id to (it.data ?: emptyMap()) })
                 }
             }
         onDispose { exReg.remove() }
@@ -101,7 +94,13 @@ fun PetActivityScreen(navController: NavHostController, username: String, petId:
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(text = petName?.let { "$it's Activity" } ?: "Loading...", style = MaterialTheme.typography.titleLarge, color = Color.Black) },
+                title = {
+                    Text(
+                        text = petName?.let { "$it's Activity" } ?: "Loading...",
+                        color = Color.Black,
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.Black)
@@ -125,7 +124,9 @@ fun PetActivityScreen(navController: NavHostController, username: String, petId:
             Box(
                 modifier = Modifier.fillMaxSize().padding(padding),
                 contentAlignment = Alignment.Center
-            ) { CircularProgressIndicator() }
+            ) {
+                CircularProgressIndicator()
+            }
         } else {
             Column(
                 modifier = Modifier
@@ -134,6 +135,7 @@ fun PetActivityScreen(navController: NavHostController, username: String, petId:
                     .padding(16.dp)
                     .verticalScroll(rememberScrollState())
             ) {
+                // --- Pet Header ---
                 Image(
                     painter = painterResource(R.drawable.dog1),
                     contentDescription = "Pet Image",
@@ -143,11 +145,16 @@ fun PetActivityScreen(navController: NavHostController, username: String, petId:
                         .background(Color.White)
                         .align(Alignment.CenterHorizontally)
                 )
-                Spacer(Modifier.height(16.dp))
-                Text(petName ?: "Unknown Pet", fontSize = 22.sp, fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.CenterHorizontally))
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    petName ?: "Unknown Pet",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 22.sp,
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
                 Spacer(Modifier.height(24.dp))
 
-                // --- Meal Card ---
+                // --- Meal Plans ---
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
@@ -164,16 +171,16 @@ fun PetActivityScreen(navController: NavHostController, username: String, petId:
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Column { Text("🍽 ${meal["meal"]} - ${meal["time"]} (${meal["amount"]})") }
+                                    Column {
+                                        Text("🍽 ${meal["meal"]} - ${meal["time"]} (${meal["amount"]})")
+                                    }
                                     Button(
                                         onClick = {
                                             db.collection("users").document(username)
                                                 .collection("pets").document(petId)
                                                 .collection("mealtime").document(mealId)
                                                 .delete()
-                                                .addOnSuccessListener {
-                                                    Toast.makeText(context, "Meal confirmed and removed!", Toast.LENGTH_SHORT).show()
-                                                }
+                                            Toast.makeText(context, "Meal confirmed and removed!", Toast.LENGTH_SHORT).show()
                                         },
                                         colors = ButtonDefaults.buttonColors(containerColor = Color.Black)
                                     ) { Text("Confirm Fed", color = Color.White, fontSize = 12.sp) }
@@ -186,7 +193,7 @@ fun PetActivityScreen(navController: NavHostController, username: String, petId:
 
                 Spacer(Modifier.height(24.dp))
 
-                // --- Exercise Card ---
+                // --- Exercises ---
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
@@ -198,7 +205,7 @@ fun PetActivityScreen(navController: NavHostController, username: String, petId:
                         if (exerciseList.isEmpty()) Text("No exercises yet.", color = Color.Gray)
                         else {
                             exerciseList.forEach { (exId, ex) ->
-                                var remainingMinutes by remember { mutableStateOf(0) }
+                                var remainingSeconds by remember { mutableStateOf(0) }
                                 var isRunning by remember { mutableStateOf(false) }
                                 var isPaused by remember { mutableStateOf(false) }
                                 var showConfirm by remember { mutableStateOf(false) }
@@ -207,8 +214,13 @@ fun PetActivityScreen(navController: NavHostController, username: String, petId:
                                     Text("🏃 ${ex["recommendation"] ?: "Exercise"}")
                                     Spacer(Modifier.height(6.dp))
 
-                                    if (isRunning) Text("⏱ $remainingMinutes min remaining", color = Color.Red, fontWeight = FontWeight.SemiBold)
-                                    else if (showConfirm) Text("✅ Exercise finished!", color = Color.Green, fontWeight = FontWeight.Bold)
+                                    if (isRunning) {
+                                        val mins = remainingSeconds / 60
+                                        val secs = remainingSeconds % 60
+                                        Text("⏱ %02d:%02d remaining".format(mins, secs), color = Color.Red)
+                                    } else if (showConfirm) {
+                                        Text("✅ Exercise finished!", color = Color.Green)
+                                    }
 
                                     Spacer(Modifier.height(6.dp))
 
@@ -232,7 +244,7 @@ fun PetActivityScreen(navController: NavHostController, username: String, petId:
                                                         .collection("pets").document(petId.lowercase())
                                                         .collection("exercise").document(exId)
                                                         .update("status", "Completed")
-                                                    Toast.makeText(context, "Exercise confirmed!", Toast.LENGTH_SHORT).show()
+                                                    Toast.makeText(context, "Exercise marked as done!", Toast.LENGTH_SHORT).show()
                                                     showConfirm = false
                                                 },
                                                 colors = ButtonDefaults.buttonColors(containerColor = Color.Black)
@@ -241,25 +253,32 @@ fun PetActivityScreen(navController: NavHostController, username: String, petId:
                                         else -> {
                                             Button(
                                                 onClick = {
-                                                    val durationFromDb = ex["duration"]
-                                                    val durationMinutes = when (durationFromDb) {
-                                                        is Long -> durationFromDb.toInt()
-                                                        is Double -> durationFromDb.toInt()
-                                                        is String -> durationFromDb.toIntOrNull() ?: 1
+                                                    val durationMinutes = when (val d = ex["duration"]) {
+                                                        is Long -> d.toInt()
+                                                        is Double -> d.toInt()
+                                                        is String -> d.toIntOrNull() ?: 1
                                                         else -> 1
                                                     }
-
-                                                    remainingMinutes = durationMinutes
+                                                    remainingSeconds = durationMinutes * 60
                                                     isRunning = true
                                                     isPaused = false
 
                                                     scope.launch {
-                                                        while (remainingMinutes > 0) {
-                                                            if (!isPaused) remainingMinutes--
-                                                            delay(60_000) // delay 1 minute
+                                                        while (remainingSeconds > 0) {
+                                                            if (!isPaused) remainingSeconds--
+                                                            delay(1000)
                                                         }
+                                                        // Timer finished!
                                                         isRunning = false
                                                         showConfirm = true
+
+                                                        // Immediately notify when done
+                                                        setPetAlarm(
+                                                            context,
+                                                            title = "Exercise Finished!",
+                                                            message = "${petName ?: "Your pet"} has completed the exercise!",
+                                                            triggerTime = System.currentTimeMillis()
+                                                        )
                                                     }
                                                 },
                                                 colors = ButtonDefaults.buttonColors(containerColor = Color.Black)
@@ -277,64 +296,28 @@ fun PetActivityScreen(navController: NavHostController, username: String, petId:
     }
 }
 
-// --- Alarm + Time Utility ---
+// --- Notification Alarm ---
 fun setPetAlarm(context: Context, title: String, message: String, triggerTime: Long) {
     val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-
     val intent = Intent(context, NotificationReceiver::class.java).apply {
         putExtra("title", title)
         putExtra("message", message)
     }
-
     val pendingIntent = PendingIntent.getBroadcast(
         context,
         (System.currentTimeMillis() % Int.MAX_VALUE).toInt(),
         intent,
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
     )
-
     try {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            if (alarmManager.canScheduleExactAlarms()) {
-                alarmManager.setExactAndAllowWhileIdle(
-                    AlarmManager.RTC_WAKEUP,
-                    triggerTime,
-                    pendingIntent
-                )
-            } else {
-                Toast.makeText(context, "Cannot schedule exact alarm", Toast.LENGTH_SHORT).show()
-            }
-        } else {
-            alarmManager.setExactAndAllowWhileIdle(
-                AlarmManager.RTC_WAKEUP,
-                triggerTime,
-                pendingIntent
-            )
-        }
+        alarmManager.setExactAndAllowWhileIdle(
+            AlarmManager.RTC_WAKEUP,
+            triggerTime,
+            pendingIntent
+        )
     } catch (e: SecurityException) {
         e.printStackTrace()
         Toast.makeText(context, "Alarm permission required", Toast.LENGTH_SHORT).show()
-    }
-}
-
-fun parseTimeToMillis(timeStr: String): Long {
-    return try {
-        val sdf = SimpleDateFormat("hh:mm a", Locale.getDefault())
-        val date = sdf.parse(timeStr)
-        val calendar = Calendar.getInstance().apply {
-            time = date!!
-            val now = Calendar.getInstance()
-            set(Calendar.YEAR, now.get(Calendar.YEAR))
-            set(Calendar.MONTH, now.get(Calendar.MONTH))
-            set(Calendar.DAY_OF_MONTH, now.get(Calendar.DAY_OF_MONTH))
-        }
-        if (calendar.timeInMillis < System.currentTimeMillis()) {
-            calendar.add(Calendar.DAY_OF_MONTH, 1)
-        }
-        calendar.timeInMillis
-    } catch (e: Exception) {
-        e.printStackTrace()
-        0L
     }
 }
 

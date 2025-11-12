@@ -96,6 +96,10 @@ fun AppNavigation(navController: NavHostController) {
             val username = backStackEntry.arguments?.getString("username") ?: ""
             PetListScreen(navController, username)
         }
+        composable("petlistmed/{username}") { backStackEntry ->
+            val username = backStackEntry.arguments?.getString("username") ?: ""
+            PetListScreenMed(navController, username)
+        }
 
         composable("bmi_form/{username}") { backStackEntry ->
             val username = backStackEntry.arguments?.getString("username") ?: ""
@@ -113,8 +117,19 @@ fun AppNavigation(navController: NavHostController) {
             val petId = backStackEntry.arguments?.getString("petId") ?: ""
             AddActivityScreen(navController, username, petId)
         }
+        composable("medicalTracking/{username}/{petId}") { backStack ->
+            val username = backStack.arguments?.getString("username") ?: ""
+            val petId = backStack.arguments?.getString("petId") ?: ""
+            MedicalTrackingScreen(navController, username, petId)
+        }
 
+        composable("scheduleAppointment/{username}/{petId}") { backStack ->
+            val username = backStack.arguments?.getString("username") ?: ""
+            val petId = backStack.arguments?.getString("petId") ?: ""
+            ScheduleAppointmentScreen(navController, username, petId)
+        }
         composable("contacts") { ContactsScreen(navController) }
         composable("settings") { SettingsScreen(navController) }
+
     }
 }

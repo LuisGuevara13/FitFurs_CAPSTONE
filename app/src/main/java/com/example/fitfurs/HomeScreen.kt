@@ -84,7 +84,7 @@ fun HomeScreen(navController: NavHostController, username: String) {
         Spacer(modifier = Modifier.height(60.dp))
 
         Button(
-            onClick = { Toast.makeText(context, "Medical Tracking", Toast.LENGTH_SHORT).show() },
+            onClick = {  navController.navigate("petlistmed/$username") },
             modifier = Modifier
                 .width(380.dp)
                 .height(75.dp),
