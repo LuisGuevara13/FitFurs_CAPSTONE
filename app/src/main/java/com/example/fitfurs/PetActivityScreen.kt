@@ -22,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -31,6 +32,7 @@ import androidx.navigation.NavHostController
 import com.example.fitfurs.R
 import com.example.fitfurs.NotificationReceiver
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.CoroutineScope
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlinx.coroutines.delay
@@ -85,7 +87,9 @@ fun PetActivityScreen(navController: NavHostController, username: String, petId:
             .addSnapshotListener { snap, err ->
                 if (err == null && snap != null) {
                     exerciseList.clear()
-                    exerciseList.addAll(snap.documents.mapNotNull { it.id to (it.data ?: emptyMap()) })
+                    exerciseList.addAll(snap.documents.mapNotNull {
+                        it.id to (it.data ?: emptyMap())
+                    })
                 }
             }
         onDispose { exReg.remove() }
@@ -103,7 +107,11 @@ fun PetActivityScreen(navController: NavHostController, username: String, petId:
                 },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.Black)
+                        Icon(
+                            Icons.Default.ArrowBack,
+                            contentDescription = "Back",
+                            tint = Color.Black
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
@@ -135,30 +143,38 @@ fun PetActivityScreen(navController: NavHostController, username: String, petId:
                     .padding(16.dp)
                     .verticalScroll(rememberScrollState())
             ) {
-                // --- Pet Header ---
-                Image(
-                    painter = painterResource(R.drawable.dog1),
-                    contentDescription = "Pet Image",
-                    modifier = Modifier
-                        .size(120.dp)
-                        .clip(CircleShape)
-                        .background(Color.White)
-                        .align(Alignment.CenterHorizontally)
-                )
-                Spacer(Modifier.height(12.dp))
-                Text(
-                    petName ?: "Unknown Pet",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 22.sp,
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                )
+
+                // --- Pet Header (Left Aligned) ---
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Start,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Image(
+                        painter = painterResource(R.drawable.dog1),
+                        contentDescription = "Pet Image",
+                        modifier = Modifier
+                            .size(60.dp)
+                            .clip(CircleShape)
+                            .background(Color.White),
+                        contentScale = ContentScale.Crop
+                    )
+                    Spacer(Modifier.width(12.dp))
+                    Text(
+                        petName ?: "Unknown Pet",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 22.sp
+                    )
+                }
+
                 Spacer(Modifier.height(24.dp))
 
-                // --- Meal Plans ---
+                // --- Meal Plans FIRST ---
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White)
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                 ) {
                     Column(Modifier.padding(16.dp)) {
                         Text("Meal Plans", fontWeight = FontWeight.Bold, fontSize = 20.sp)
@@ -180,7 +196,11 @@ fun PetActivityScreen(navController: NavHostController, username: String, petId:
                                                 .collection("pets").document(petId)
                                                 .collection("mealtime").document(mealId)
                                                 .delete()
-                                            Toast.makeText(context, "Meal confirmed and removed!", Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(
+                                                context,
+                                                "Meal confirmed and removed!",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
                                         },
                                         colors = ButtonDefaults.buttonColors(containerColor = Color.Black)
                                     ) { Text("Confirm Fed", color = Color.White, fontSize = 12.sp) }
@@ -193,11 +213,12 @@ fun PetActivityScreen(navController: NavHostController, username: String, petId:
 
                 Spacer(Modifier.height(24.dp))
 
-                // --- Exercises ---
+                // --- Exercises SECOND ---
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White)
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                 ) {
                     Column(Modifier.padding(16.dp)) {
                         Text("Exercises", fontWeight = FontWeight.Bold, fontSize = 20.sp)
@@ -217,72 +238,135 @@ fun PetActivityScreen(navController: NavHostController, username: String, petId:
                                     if (isRunning) {
                                         val mins = remainingSeconds / 60
                                         val secs = remainingSeconds % 60
-                                        Text("⏱ %02d:%02d remaining".format(mins, secs), color = Color.Red)
+                                        Text(
+                                            "⏱ %02d:%02d remaining".format(mins, secs),
+                                            color = Color.Red
+                                        )
                                     } else if (showConfirm) {
                                         Text("✅ Exercise finished!", color = Color.Green)
                                     }
 
                                     Spacer(Modifier.height(6.dp))
 
-                                    when {
-                                        isRunning && !isPaused -> {
-                                            Button(
-                                                onClick = { isPaused = true },
-                                                colors = ButtonDefaults.buttonColors(containerColor = Color.Gray)
-                                            ) { Text("Pause", color = Color.White, fontSize = 12.sp) }
-                                        }
-                                        isRunning && isPaused -> {
-                                            Button(
-                                                onClick = { isPaused = false },
-                                                colors = ButtonDefaults.buttonColors(containerColor = Color.Black)
-                                            ) { Text("Resume", color = Color.White, fontSize = 12.sp) }
-                                        }
-                                        showConfirm -> {
-                                            Button(
-                                                onClick = {
-                                                    db.collection("users").document(username)
-                                                        .collection("pets").document(petId.lowercase())
-                                                        .collection("exercise").document(exId)
-                                                        .update("status", "Completed")
-                                                    Toast.makeText(context, "Exercise marked as done!", Toast.LENGTH_SHORT).show()
-                                                    showConfirm = false
-                                                },
-                                                colors = ButtonDefaults.buttonColors(containerColor = Color.Black)
-                                            ) { Text("Confirm Completion", color = Color.White, fontSize = 12.sp) }
-                                        }
-                                        else -> {
-                                            Button(
-                                                onClick = {
-                                                    val durationMinutes = when (val d = ex["duration"]) {
-                                                        is Long -> d.toInt()
-                                                        is Double -> d.toInt()
-                                                        is String -> d.toIntOrNull() ?: 1
-                                                        else -> 1
-                                                    }
-                                                    remainingSeconds = durationMinutes * 60
-                                                    isRunning = true
-                                                    isPaused = false
+                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        // Start/Pause/Resume/Confirm Buttons
+                                        when {
+                                            isRunning && !isPaused -> {
+                                                Button(
+                                                    onClick = { isPaused = true },
+                                                    colors = ButtonDefaults.buttonColors(
+                                                        containerColor = Color.Gray
+                                                    )
+                                                ) {
+                                                    Text(
+                                                        "Pause",
+                                                        color = Color.White,
+                                                        fontSize = 12.sp
+                                                    )
+                                                }
+                                            }
 
-                                                    scope.launch {
-                                                        while (remainingSeconds > 0) {
-                                                            if (!isPaused) remainingSeconds--
-                                                            delay(1000)
-                                                        }
-                                                        // Timer finished!
-                                                        isRunning = false
-                                                        showConfirm = true
+                                            isRunning && isPaused -> {
+                                                Button(
+                                                    onClick = { isPaused = false },
+                                                    colors = ButtonDefaults.buttonColors(
+                                                        containerColor = Color.Black
+                                                    )
+                                                ) {
+                                                    Text(
+                                                        "Resume",
+                                                        color = Color.White,
+                                                        fontSize = 12.sp
+                                                    )
+                                                }
+                                            }
 
-                                                        // Immediately notify when done
-                                                        setPetAlarm(
+                                            showConfirm -> {
+                                                Button(
+                                                    onClick = {
+                                                        db.collection("users").document(username)
+                                                            .collection("pets")
+                                                            .document(petId.lowercase())
+                                                            .collection("exercise").document(exId)
+                                                            .update("status", "Completed")
+                                                        Toast.makeText(
                                                             context,
-                                                            title = "Exercise Finished!",
-                                                            message = "${petName ?: "Your pet"} has completed the exercise!",
-                                                            triggerTime = System.currentTimeMillis()
-                                                        )
-                                                    }
-                                                },
-                                                colors = ButtonDefaults.buttonColors(containerColor = Color.Black)
-                                            ) { Text("Start Exercise", color = Color.White, fontSize = 12.sp) }
+                                                            "Exercise marked as done!",
+                                                            Toast.LENGTH_SHORT
+                                                        ).show()
+                                                        showConfirm = false
+                                                    },
+                                                    colors = ButtonDefaults.buttonColors(
+                                                        containerColor = Color.Black
+                                                    )
+                                                ) {
+                                                    Text(
+                                                        "Confirm",
+                                                        color = Color.White,
+                                                        fontSize = 12.sp
+                                                    )
+                                                }
+                                            }
+
+                                            else -> {
+                                                Button(
+                                                    onClick = {
+                                                        val durationMinutes =
+                                                            when (val d = ex["duration"]) {
+                                                                is Long -> d.toInt()
+                                                                is Double -> d.toInt()
+                                                                is String -> d.toIntOrNull() ?: 1
+                                                                else -> 1
+                                                            }
+                                                        remainingSeconds = durationMinutes * 60
+                                                        isRunning = true
+                                                        isPaused = false
+
+                                                        scope.launch {
+                                                            while (remainingSeconds > 0) {
+                                                                if (!isPaused) remainingSeconds--
+                                                                delay(1000)
+                                                            }
+                                                            isRunning = false
+                                                            showConfirm = true
+
+                                                            setPetAlarm(
+                                                                context,
+                                                                title = "Exercise Finished!",
+                                                                message = "${petName ?: "Your pet"} has completed the exercise!",
+                                                                triggerTime = System.currentTimeMillis()
+                                                            )
+                                                        }
+                                                    },
+                                                    colors = ButtonDefaults.buttonColors(
+                                                        containerColor = Color.Black
+                                                    )
+                                                ) {
+                                                    Text(
+                                                        "Start Exercise",
+                                                        color = Color.White,
+                                                        fontSize = 12.sp
+                                                    )
+                                                }
+                                            }
+                                        }
+
+                                        // --- REMOVE BUTTON ---
+                                        Button(
+                                            onClick = {
+                                                db.collection("users").document(username)
+                                                    .collection("pets").document(petId.lowercase())
+                                                    .collection("exercise").document(exId)
+                                                    .delete()
+                                                Toast.makeText(
+                                                    context,
+                                                    "Exercise removed!",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            },
+                                            colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                                        ) {
+                                            Text("Remove", color = Color.White, fontSize = 12.sp)
                                         }
                                     }
                                 }
@@ -290,6 +374,104 @@ fun PetActivityScreen(navController: NavHostController, username: String, petId:
                             }
                         }
                     }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ExerciseCard(
+    exId: String,
+    ex: Map<String, Any>,
+    username: String,
+    petId: String,
+    context: Context,
+    scope: CoroutineScope,
+    petName: String?
+) {
+    val db = FirebaseFirestore.getInstance()
+    var remainingSeconds by remember { mutableStateOf(0) }
+    var isRunning by remember { mutableStateOf(false) }
+    var isPaused by remember { mutableStateOf(false) }
+    var showConfirm by remember { mutableStateOf(false) }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFF8F8F8))
+    ) {
+        Column(Modifier.padding(12.dp)) {
+            Text("🏃 ${ex["recommendation"] ?: "Exercise"}", fontWeight = FontWeight.Medium)
+            Spacer(Modifier.height(4.dp))
+
+            if (isRunning) {
+                val mins = remainingSeconds / 60
+                val secs = remainingSeconds % 60
+                Text("⏱ %02d:%02d remaining".format(mins, secs), color = Color.Red)
+            } else if (showConfirm) {
+                Text("✅ Exercise finished!", color = Color.Green)
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+            when {
+                isRunning && !isPaused -> {
+                    Button(
+                        onClick = { isPaused = true },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Gray)
+                    ) { Text("Pause", color = Color.White, fontSize = 12.sp) }
+                }
+                isRunning && isPaused -> {
+                    Button(
+                        onClick = { isPaused = false },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Black)
+                    ) { Text("Resume", color = Color.White, fontSize = 12.sp) }
+                }
+                showConfirm -> {
+                    Button(
+                        onClick = {
+                            db.collection("users").document(username)
+                                .collection("pets").document(petId.lowercase())
+                                .collection("exercise").document(exId)
+                                .update("status", "Completed")
+                            Toast.makeText(context, "Exercise marked as done!", Toast.LENGTH_SHORT).show()
+                            showConfirm = false
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Black)
+                    ) { Text("Confirm", color = Color.White, fontSize = 12.sp) }
+                }
+                else -> {
+                    Button(
+                        onClick = {
+                            val durationMinutes = when (val d = ex["duration"]) {
+                                is Long -> d.toInt()
+                                is Double -> d.toInt()
+                                is String -> d.toIntOrNull() ?: 1
+                                else -> 1
+                            }
+                            remainingSeconds = durationMinutes * 60
+                            isRunning = true
+                            isPaused = false
+
+                            scope.launch {
+                                while (remainingSeconds > 0) {
+                                    if (!isPaused) remainingSeconds--
+                                    delay(1000)
+                                }
+                                isRunning = false
+                                showConfirm = true
+
+                                setPetAlarm(
+                                    context,
+                                    title = "Exercise Finished!",
+                                    message = "${petName ?: "Your pet"} has completed the exercise!",
+                                    triggerTime = System.currentTimeMillis()
+                                )
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Black)
+                    ) { Text("Start", color = Color.White, fontSize = 12.sp) }
                 }
             }
         }

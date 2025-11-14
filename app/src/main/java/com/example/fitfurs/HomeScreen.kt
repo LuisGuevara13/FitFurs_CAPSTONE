@@ -1,48 +1,37 @@
 package com.example.fitfurs
 
-import android.widget.Toast
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 
 @Composable
 fun HomeScreen(navController: NavHostController, username: String) {
-    val context = LocalContext.current
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
+            .padding(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        // --- Top Bar ---
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -51,91 +40,108 @@ fun HomeScreen(navController: NavHostController, username: String) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Image(
                     painter = painterResource(id = R.drawable.lebin),
-                    contentDescription = "Profile",
+                    contentDescription = "Profile Picture",
                     modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
+                        .size(45.dp)
+                        .clip(CircleShape),
+                    contentScale = ContentScale.Crop
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Hello, $username", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    buildAnnotatedString {
+                        withStyle(SpanStyle(color = Color.Gray)) { append("Hello, ") }
+                        withStyle(SpanStyle(color = Color.Black, fontWeight = FontWeight.Bold)) {
+                            append(username)
+                        }
+                    },
+                    fontSize = 18.sp
+                )
             }
-            IconButton(onClick = {navController.navigate("settings")}) {
-                Icon(Icons.Default.Settings, contentDescription = "Settings")
+
+            // ✅ Pass username when navigating to Settings
+            IconButton(onClick = { navController.navigate("settings/$username") }) {
+                Icon(
+                    Icons.Default.Settings,
+                    contentDescription = "Settings",
+                    tint = Color.Black,
+                    modifier = Modifier.size(28.dp)
+                )
             }
         }
-        Spacer(modifier = Modifier.height(55.dp))
 
+        Spacer(modifier = Modifier.height(60.dp))
+
+        // --- Title Section: Dog + Activities Side by Side ---
         Row(
-            modifier = Modifier
-                .padding(top = 24.dp)
-                .fillMaxWidth(),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Image(
                 painter = painterResource(id = R.drawable.ico1),
                 contentDescription = "Pet Illustration",
-                modifier = Modifier.size(75.dp),
+                modifier = Modifier
+                    .size(90.dp)
+                    .padding(end = 8.dp),
                 contentScale = ContentScale.Fit
             )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Pet Overview", fontSize = 35.sp, fontWeight = FontWeight.Bold)
+            Text(
+                text = "Activities",
+                fontSize = 34.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.Black
+            )
         }
+
         Spacer(modifier = Modifier.height(60.dp))
 
-        Button(
-            onClick = {  navController.navigate("petlistmed/$username") },
-            modifier = Modifier
-                .width(380.dp)
-                .height(75.dp),
-            shape = RoundedCornerShape(16.dp),
+        // --- Buttons Section ---
+        ActivityButton(
+            iconRes = R.drawable.icon2,
+            text = "Medical Tracking",
+            onClick = { navController.navigate("petlistmed/$username") }
+        )
+        Spacer(modifier = Modifier.height(24.dp))
+        ActivityButton(
+            iconRes = R.drawable.icon3,
+            text = "Diet & Exercise",
+            onClick = { navController.navigate("petlist/$username") }
+        )
+        Spacer(modifier = Modifier.height(24.dp))
+        ActivityButton(
+            iconRes = R.drawable.overview,
+            text = "Pet Overview",
+            onClick = { navController.navigate("petlist/$username") }
+        )
+    }
+}
 
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD3D3D3))
-        ) {
-            Icon(painter = painterResource(id = R.drawable.icon2), contentDescription = "Medical", tint = Color.Black)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Medical Tracking", color = Color.Black, fontSize = 23.sp)
-        }
-
-        Spacer(modifier = Modifier.height(25.dp))
-
-        Button(
-            onClick = { navController.navigate("petlist/$username") },
-            modifier = Modifier
-                .width(380.dp)
-                .height(75.dp),
-            shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD3D3D3))
-        ) {
-            Icon(painter = painterResource(id = R.drawable.icon3), contentDescription = "Exercise", tint = Color.Black)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Diet & Exercise", color = Color.Black, fontSize = 23.sp)
-        }
-        Spacer(modifier = Modifier.height(25.dp))
-        Button(
-            onClick = { navController.navigate("contacts") },
-            modifier = Modifier
-                .width(380.dp)
-                .height(75.dp),
-            shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD3D3D3))
-        ) {
-            Icon(painter = painterResource(id = R.drawable.icon4), contentDescription = "Contacts", tint = Color.Black)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Contacts", color = Color.Black, fontSize = 23.sp)
-        }
-        Spacer(modifier = Modifier.height(25.dp))
-        Button(
-            onClick = { navController.navigate("petlist/$username") },
-            modifier = Modifier
-                .width(380.dp)
-                .height(75.dp),
-            shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD3D3D3))
-        ) {
-            Icon(painter = painterResource(id = R.drawable.overview), contentDescription = "Petoverview", tint = Color.Black)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Pet Overview", color = Color.Black, fontSize = 23.sp)
-        }
+@Composable
+fun ActivityButton(iconRes: Int, text: String, onClick: () -> Unit) {
+    Button(
+        onClick = onClick,
+        modifier = Modifier
+            .width(330.dp)
+            .height(70.dp)
+            .shadow(
+                elevation = 10.dp,
+                shape = RoundedCornerShape(20.dp),
+                clip = false
+            ),
+        shape = RoundedCornerShape(20.dp),
+        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF5F5F5))
+    ) {
+        Icon(
+            painter = painterResource(id = iconRes),
+            contentDescription = text,
+            tint = Color.Black,
+            modifier = Modifier.size(36.dp)
+        )
+        Spacer(modifier = Modifier.width(10.dp))
+        Text(
+            text,
+            color = Color.Black,
+            fontSize = 20.sp,
+            fontWeight = FontWeight.SemiBold
+        )
     }
 }

@@ -50,61 +50,135 @@ import androidx.compose.material.icons.*
 
 @Composable
 fun LoginScreen(navController: NavHostController) {
-    var email by remember { mutableStateOf("") }            // label says Email in UI (keeps design)
+    var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val db = FirebaseFirestore.getInstance()
 
     Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.White)
+            .padding(horizontal = 24.dp, vertical = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        // Back Arrow
+        Row(
+            modifier = Modifier
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             IconButton(onClick = { navController.navigate("welcome") }) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.Black)
             }
         }
 
-        Icon(
-            painter = painterResource(id = R.drawable.icon_logo),
-            contentDescription = "Logo",
-            tint = Color.Black,
-            modifier = Modifier.size(64.dp)
-        )
-        Text("Login", fontSize = 28.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 8.dp, bottom = 16.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
+        // Welcome Text
+        Text(
+            text = "Welcome Back",
+            fontSize = 20.sp,
+            color = Color.Black,
+            fontWeight = FontWeight.Medium
+        )
+
+        Text(
+            text = "Login",
+            fontSize = 28.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.Black
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Logo Image
+        Image(
+            painter = painterResource(id = R.drawable.icon_logo),
+            contentDescription = "App Logo",
+            modifier = Modifier
+                .size(280.dp),
+            contentScale = ContentScale.Fit
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+
+
+        Spacer(modifier = Modifier.height(40.dp))
+
+        // Email Field
         OutlinedTextField(
             value = email,
             onValueChange = { email = it },
-            label = { Text("Email") },
+            placeholder = { Text("Email") },
             singleLine = true,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                unfocusedContainerColor = Color(0xFFFDFDFD),
+                focusedContainerColor = Color(0xFFFDFDFD),
+                focusedBorderColor = Color.Black,
+                unfocusedBorderColor = Color.LightGray
+            )
         )
-        Spacer(modifier = Modifier.height(8.dp))
 
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Password Field
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
-            label = { Text("Password") },
+            placeholder = { Text("Password") },
             singleLine = true,
             visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
             trailingIcon = {
-                val image = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff
+                val image =
+                    if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff
                 IconButton(onClick = { passwordVisible = !passwordVisible }) {
                     Icon(imageVector = image, contentDescription = null)
                 }
             },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                unfocusedContainerColor = Color(0xFFFDFDFD),
+                focusedContainerColor = Color(0xFFFDFDFD),
+                focusedBorderColor = Color.Black,
+                unfocusedBorderColor = Color.LightGray
+            )
         )
-        Spacer(modifier = Modifier.height(16.dp))
 
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Forgot Password text
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End
+        ) {
+            Text(
+                text = "Forgot Password?",
+                color = Color.Black,
+                fontSize = 14.sp,
+                modifier = Modifier.clickable {
+                    Toast.makeText(context, "Forgot Password Clicked", Toast.LENGTH_SHORT).show()
+                }
+            )
+        }
+
+        Spacer(modifier = Modifier.height(30.dp))
+
+        // Login Button
         Button(
             onClick = {
                 if (email.isBlank() || password.isBlank()) {
                     Toast.makeText(context, "Please enter email and password", Toast.LENGTH_SHORT).show()
                 } else {
-                    // use the exact string user typed as the document ID (same behavior as your previous code)
                     val userId = email
                     db.collection("users").document(userId).get()
                         .addOnSuccessListener { document ->
@@ -127,11 +201,30 @@ fun LoginScreen(navController: NavHostController) {
                         }
                 }
             },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(55.dp),
+            shape = RoundedCornerShape(10.dp),
             colors = ButtonDefaults.buttonColors(containerColor = Color.Black)
         ) {
-            Text("Login", color = Color.White)
+            Text("Login", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Medium)
+        }
+
+        Spacer(modifier = Modifier.height(25.dp))
+
+        // Sign Up Prompt
+        Row(
+            horizontalArrangement = Arrangement.Center,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(text = "Don't have an account? ", color = Color.Black, fontSize = 15.sp)
+            Text(
+                text = "Sign Up",
+                color = Color.Black,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.clickable { navController.navigate("signup") }
+            )
         }
     }
 }

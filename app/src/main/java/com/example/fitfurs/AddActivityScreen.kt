@@ -27,9 +27,6 @@ import com.google.firebase.firestore.FirebaseFirestore
 import java.text.SimpleDateFormat
 import java.util.*
 
-
-
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddActivityScreen(navController: NavHostController, username: String, petId: String) {
@@ -39,6 +36,7 @@ fun AddActivityScreen(navController: NavHostController, username: String, petId:
     var meal by remember { mutableStateOf("") }
     var time by remember { mutableStateOf("") }
     var amount by remember { mutableStateOf("") }
+    var showVetCalc by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -60,7 +58,6 @@ fun AddActivityScreen(navController: NavHostController, username: String, petId:
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
-
             // 🥣 Add Meal Section
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -71,13 +68,17 @@ fun AddActivityScreen(navController: NavHostController, username: String, petId:
                     Text("Add Meal", fontWeight = FontWeight.Bold, fontSize = 20.sp)
                     Spacer(Modifier.height(8.dp))
 
+                    // 🍖 Meal name
                     OutlinedTextField(
                         value = meal,
                         onValueChange = { meal = it },
-                        label = { Text("Meal Name") }
+                        label = { Text("Meal Name") },
+                        modifier = Modifier.fillMaxWidth()
                     )
 
                     Spacer(Modifier.height(8.dp))
+
+                    // ⏰ Time picker
                     Button(
                         onClick = {
                             val calendar = Calendar.getInstance()
@@ -95,19 +96,25 @@ fun AddActivityScreen(navController: NavHostController, username: String, petId:
                                 false
                             ).show()
                         },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.Black)
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
+                        modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(if (time.isEmpty()) "Pick Time" else "Time: $time", color = Color.White)
                     }
 
+                    Spacer(Modifier.height(8.dp))
+
+                    // 🍽 Amount input
                     OutlinedTextField(
                         value = amount,
                         onValueChange = { amount = it },
-                        label = { Text("Amount") }
+                        label = { Text("Amount (e.g. 1 cup)") },
+                        modifier = Modifier.fillMaxWidth()
                     )
 
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(16.dp))
 
+                    // ✅ Add Meal Button
                     Button(
                         onClick = {
                             if (meal.isNotEmpty() && time.isNotEmpty() && amount.isNotEmpty()) {
@@ -126,11 +133,28 @@ fun AddActivityScreen(navController: NavHostController, username: String, petId:
                                         Toast.makeText(context, "Meal added and reminder set!", Toast.LENGTH_SHORT).show()
                                         meal = ""; time = ""; amount = ""
                                     }
-                            } else Toast.makeText(context, "Fill all meal fields", Toast.LENGTH_SHORT).show()
+                                    .addOnFailureListener {
+                                        Toast.makeText(context, "Failed to add meal.", Toast.LENGTH_SHORT).show()
+                                    }
+                            } else {
+                                Toast.makeText(context, "Fill all meal fields", Toast.LENGTH_SHORT).show()
+                            }
                         },
+                        modifier = Modifier.fillMaxWidth(),
                         colors = ButtonDefaults.buttonColors(containerColor = Color.Black)
                     ) {
                         Text("Add Meal", color = Color.White)
+                    }
+
+                    Spacer(Modifier.height(16.dp))
+
+                    // 🧮 Vet Calculator Button
+                    Button(
+                        onClick = { showVetCalc = true },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1976D2))
+                    ) {
+                        Text("Vet Food Recommendation", color = Color.White)
                     }
                 }
             }
@@ -159,25 +183,23 @@ fun AddActivityScreen(navController: NavHostController, username: String, petId:
                                     val breed = document.getString("breed") ?: "Unknown"
                                     val weight = document.getString("weight")?.toDoubleOrNull() ?: 0.0
 
-                                    // --- Recommendation text ---
                                     val recommendation = when {
                                         weight < 5 -> "Short walks (10–15 mins, twice daily) for $breed"
                                         weight in 5.0..15.0 -> "Moderate walks (20–30 mins, twice daily) for $breed"
                                         else -> "Active play and long walks (30–45 mins, twice daily) for $breed"
                                     }
 
-                                    // --- Duration in seconds based on weight ---
-                                    val durationSeconds = when {
-                                        weight < 5 -> 10 * 60
-                                        weight in 5.0..15.0 -> 25 * 60
-                                        else -> 40 * 60
+                                    val durationMinutes = when {
+                                        weight < 5 -> 10
+                                        weight in 5.0..15.0 -> 25
+                                        else -> 40
                                     }
 
                                     val data = mapOf(
                                         "breed" to breed,
                                         "weight" to weight,
                                         "recommendation" to recommendation,
-                                        "duration" to durationSeconds, // store duration
+                                        "duration" to durationMinutes,
                                         "timestamp" to System.currentTimeMillis()
                                     )
 
@@ -186,7 +208,6 @@ fun AddActivityScreen(navController: NavHostController, username: String, petId:
                                         .collection("exercise")
                                         .add(data)
 
-                                    // Update BMI field
                                     val newBMI = (weight / 5).toString()
                                     petRef.update("petBMI", newBMI)
 
@@ -196,12 +217,30 @@ fun AddActivityScreen(navController: NavHostController, username: String, petId:
                                 }
                             }
                         },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.Black)
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
+                        modifier = Modifier.fillMaxWidth()
                     ) {
                         Text("Generate Vet Recommendation", color = Color.White)
                     }
                 }
             }
+        }
+
+        // 🔹 Vet Food Calculator Dialog
+        if (showVetCalc) {
+            AlertDialog(
+                onDismissRequest = { showVetCalc = false },
+                confirmButton = {},
+                text = {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .fillMaxHeight(0.85f)
+                    ) {
+                        VetStylePetFoodCalculatorScreen(onBack = { showVetCalc = false })
+                    }
+                }
+            )
         }
     }
 }
@@ -270,6 +309,7 @@ fun scheduleMealNotification(
         Toast.makeText(context, "Error scheduling alarm.", Toast.LENGTH_SHORT).show()
     }
 }
+
 
 
 

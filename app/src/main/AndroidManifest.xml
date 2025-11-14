@@ -26,6 +26,9 @@
             </intent-filter>
         </activity>
         <receiver android:name=".NotificationReceiver" android:exported="true" />
+        <receiver
+            android:name=".NotificationReceiverMed"
+            android:exported="false" />
     </application>
 
 </manifest>

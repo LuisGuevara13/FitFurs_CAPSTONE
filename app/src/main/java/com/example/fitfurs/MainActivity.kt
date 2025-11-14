@@ -128,8 +128,13 @@ fun AppNavigation(navController: NavHostController) {
             val petId = backStack.arguments?.getString("petId") ?: ""
             ScheduleAppointmentScreen(navController, username, petId)
         }
+        composable("settings/{username}") { backStackEntry ->
+            val username = backStackEntry.arguments?.getString("username") ?: ""
+            SettingsScreen(navController, username)
+        }
+
         composable("contacts") { ContactsScreen(navController) }
-        composable("settings") { SettingsScreen(navController) }
+
 
     }
 }

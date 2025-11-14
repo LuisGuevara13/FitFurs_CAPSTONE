@@ -1,13 +1,20 @@
 package com.example.fitfurs
 
+import com.example.fitfurs.PetCardAct
 import android.widget.Toast
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -28,7 +35,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
@@ -57,11 +66,10 @@ fun PetListScreen(navController: NavHostController, username: String) {
 
                 pets = snapshot?.documents?.map { doc ->
                     val data = doc.data?.toMutableMap() ?: mutableMapOf()
-                    data["id"] = doc.id  // ✅ include document ID
+                    data["id"] = doc.id
                     data
                 } ?: emptyList()
             }
-
         onDispose { registration.remove() }
     }
 
@@ -72,7 +80,7 @@ fun PetListScreen(navController: NavHostController, username: String) {
                 containerColor = Color.White,
                 contentColor = Color.Black,
                 shape = CircleShape,
-                elevation = FloatingActionButtonDefaults.elevation(4.dp)
+                elevation = FloatingActionButtonDefaults.elevation(6.dp)
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Add Pet")
             }
@@ -85,7 +93,11 @@ fun PetListScreen(navController: NavHostController, username: String) {
                 .fillMaxSize()
                 .padding(horizontal = 24.dp, vertical = 16.dp)
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            // Top bar
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 IconButton(onClick = { navController.popBackStack() }) {
                     Icon(
                         Icons.Default.ArrowBack,
@@ -94,29 +106,79 @@ fun PetListScreen(navController: NavHostController, username: String) {
                     )
                 }
                 Spacer(Modifier.width(8.dp))
-                Text("Your Pets", fontSize = 24.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    text = "Pets",
+                    fontSize = 26.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
             }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Title with icons
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.icon_logo),
+                    contentDescription = "FitFurs Logo",
+                    modifier = Modifier.size(35.dp)
+                )
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    text = "Pets",
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
+                Spacer(Modifier.width(6.dp))
+                Image(
+                    painter = painterResource(id = R.drawable.ico1),
+                    contentDescription = "Dog Icon",
+                    modifier = Modifier.size(35.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+            Text(
+                text = "Choose a pet",
+                fontSize = 18.sp,
+                color = Color.Black,
+                modifier = Modifier.align(Alignment.Start),
+                fontWeight = FontWeight.SemiBold
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // --- Scrollable Pet List ---
             if (pets.isEmpty()) {
-                Text("No pets yet. Add one!", color = Color.Gray)
+                Text(
+                    text = "No pets yet. Add one!",
+                    color = Color.Gray,
+                    fontSize = 16.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
             } else {
-                pets.forEach { pet ->
-                    val petName = pet["petName"]?.toString() ?: "Unnamed Pet"
-                    val petId = pet["id"]?.toString() ?: "" // ✅ document ID
+                LazyColumn(
+                    modifier = Modifier
+                        .weight(1f),
+                    verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp)
+                ) {
+                    items(pets) { pet ->
+                        val petName = pet["petName"]?.toString() ?: "Unnamed Pet"
+                        val petId = pet["id"]?.toString() ?: ""
 
-                    PetCard(
-                        petName = petName,
-                        petImage = R.drawable.dog1,
-                        context = context,
-                        navController = navController,
-                        onClick = {
-                            navController.navigate("pet_activity/$username/$petId")
-                        }
-                    )
-
-                    Spacer(Modifier.height(12.dp))
+                        PetCardAct(
+                            petName = petName,
+                            onClick = {
+                                navController.navigate("pet_activity/$username/$petId") // Correct interpolation
+                            }
+                        )
+                    }
                 }
             }
         }
