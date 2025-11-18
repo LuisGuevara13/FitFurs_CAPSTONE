@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- Added: Chart.js library for the functional chart -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="container">
+    <div class="sidebar">
+      <h2>Admin Panel</h2>
+      <button class="active" onclick="showSection('dashboard')">Dashboard</button>
+      <button onclick="showSection('users')">Users</button>
+      <button onclick="showSection('pets')">Pet’s Information</button>
+      <button onclick="showSection('appointments')">Appointment Schedule</button> <!-- New: Button for appointments -->
+      <button onclick="showSection('feedback')">Feedback</button>
+    </div>
+
+    <div class="main">
+      <!-- Dashboard -->
+      <section id="dashboard" class="dashboard active">
+        <div class="topbar">
+          <h1>Dashboard</h1>
+        </div>
+
+        <div class="tab-container">
+          <div class="tabs">
+            <button class="active">Overview</button>
+            <button>Analytics</button>
+            <button>Reports</button>
+            <button>Notifications</button>
+          </div>
+          <div class="actions">
+            <input type="text" value="Jan 01, 2024 - Apr 01, 2024" readonly />
+            <button>Export</button>
+          </div>
+        </div>
+
+        <div class="stats-card">
+          <p>Total Users</p>
+          <h2>2350</h2>
+        </div>
+
+        <div class="chart-container">
+          <h3>User’s Graph</h3>
+          <canvas id="userChart"></canvas>
+        </div>
+      </section>
+
+      <!-- Users -->
+      <section id="users">
+        <h1>Users</h1>
+        <table>
+          <tr><th>Name</th><th>Status</th><th>Role</th><th>Date Created</th></tr>
+          <tr><td>Alexa Hyland</td><td>Active</td><td>User</td><td>01/01/2025</td></tr>
+          <tr><td>John Neron</td><td>Inactive</td><td>User</td><td>01/02/2025</td></tr>
+          <tr><td>Prince Chat</td><td>Active</td><td>Admin</td><td>01/03/2025</td></tr>
+        </table>
+      </section>
+
+      <!-- Pet Information -->
+      <section id="pets" class="pet-info">
+        <h1>Pet’s Information</h1>
+        <table>
+          <tr><th>Name</th><th>Breed</th><th>Birth Date</th></tr>
+          <tr><td>Kylo</td><td>Siberian Husky</td><td>12-29-24</td></tr>
+          <tr><td>Leiron</td><td>Shih Tzu</td><td>12-29-24</td></tr>
+          <tr><td>Renz</td><td>Beagle</td><td>12-29-24</td></tr>
+        </table>
+      </section>
+
+      <!-- New: Appointment Schedule -->
+      <section id="appointments">
+        <h1>Appointment Schedule</h1>
+        <table>
+          <tr><th>Date</th><th>Time</th><th>Pet Name</th><th>Owner</th><th>Service</th><th>Status</th></tr>
+          <tr><td>2024-10-15</td><td>10:00 AM</td><td>Kylo</td><td>Alexa Hyland</td><td>Grooming</td><td>Confirmed</td></tr>
+          <tr><td>2024-10-16</td><td>2:00 PM</td><td>Leiron</td><td>John Neron</td><td>Vaccination</td><td>Pending</td></tr>
+          <tr><td>2024-10-17</td><td>11:00 AM</td><td>Renz</td><td>Prince Chat</td><td>Check-up</td><td>Confirmed</td></tr>
+          <tr><td>2024-10-18</td><td>4:00 PM</td><td>Kylo</td><td>Alexa Hyland</td><td>Dental</td><td>Cancelled</td></tr>
+          <tr><td>2024-10-19</td><td>9:00 AM</td><td>Leiron</td><td>John Neron</td><td>Grooming</td><td>Confirmed</td></tr>
+        </table>
+      </section>
+
+      <!-- Feedback -->
+      <section id="feedback">
+        <h1>Feedback</h1>
+        <div class="feedback-item">
+          <img src="https://i.pravatar.cc/60?img=1" alt="User 1">
+          <div>
+            <strong>User 1</strong>
+            <p>Lorem ipsum dolor sit amet consectetur adipisicing elit.</p>
+          </div>
+        </div>
+        <div class="feedback-item">
+          <img src="https://i.pravatar.cc/60?img=2" alt="User 2">
+          <div>
+            <strong>User 2</strong>
+            <p>Great app! Easy to use and navigate.</p>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    function showSection(id) {
+      // Hide all sections
+      document.querySelectorAll("section").forEach(sec => sec.classList.remove("active"));
+      // Remove active class from all sidebar buttons
+      document.querySelectorAll(".sidebar button").forEach(btn => btn.classList.remove("active"));
+      // Show the selected section and activate the button
+      document.getElementById(id).classList.add("active");
+      event.target.classList.add("active");
+    }
+
+    // Chart.js - Bar Chart (only runs if the dashboard is active and canvas exists)
+    document.addEventListener('DOMContentLoaded', function() {
+      const ctx = document.getElementById('userChart');
+      if (ctx) {
+        new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+            datasets: [{
+              label: 'Users',
+              data: [220, 215, 120, 80, 150, 130, 140, 160, 180, 120, 150, 170],
+              backgroundColor: '#fff',
+              borderRadius: 5,
+            }]
+          },
+          options: {
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { ticks: { color: '#ccc' }, grid: { display: false } },
+              y: { ticks: { color: '#ccc' }, grid: { color: '#444' } }
+            }
+          }
+        });
+      }
+    });
+  </script>
+</body>
+</html>
