@@ -136,5 +136,16 @@ fun AppNavigation(navController: NavHostController) {
         composable("contacts") { ContactsScreen(navController) }
 
 
+        //ForgotPassword screen shit
+        composable("forgot_password") { ForgotPassword(navController) }
+
+        composable("forgot_password") { ForgotPassword(navController) }
+
+        //ResetPassword screen shit
+        composable("reset_password/{email}") { backStackEntry ->
+            val email = backStackEntry.arguments?.getString("email") ?: ""
+            ResetPassword(navController, email)
+        }
+
     }
 }
