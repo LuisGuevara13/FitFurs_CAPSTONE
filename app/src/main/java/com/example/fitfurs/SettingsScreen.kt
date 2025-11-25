@@ -148,9 +148,6 @@ fun SettingsScreen(navController: NavHostController, userId: String) {
                 SettingItem("Contacts", Icons.Default.Email) {
                     navController.navigate("contacts")
                 }
-                SettingItem("Notifications", Icons.Default.Notifications) {
-                    navController.navigate("notifications")
-                }
                 SettingItem("Privacy policy", Icons.Default.PrivacyTip) {
                     navController.navigate("policy")
                 }
