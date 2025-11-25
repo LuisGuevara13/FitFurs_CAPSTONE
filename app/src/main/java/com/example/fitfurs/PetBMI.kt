@@ -1,13 +1,40 @@
 package com.example.fitfurs
 
+import android.net.Uri
 import android.widget.Toast
-import androidx.compose.foundation.layout.*
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -18,18 +45,62 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.launch
+import android.util.Log
+import androidx.compose.ui.draw.shadow
+
+fun updatePetCount(userId: String) {
+    val db = FirebaseFirestore.getInstance()
+
+    val userRef = db.collection("users").document(userId)
+
+    db.runTransaction { transaction ->
+        val snapshot = transaction.get(userRef)
+
+        val currentCount = snapshot.getLong("numberOfPets") ?: 0L
+        val newCount = currentCount + 1
+
+        transaction.update(userRef, "numberOfPets", newCount)
+    }.addOnSuccessListener {
+        Log.d("PetCount", "Updated numberOfPets successfully")
+    }.addOnFailureListener {
+        Log.e("PetCount", "Failed to update numberOfPets: ${it.message}")
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PetBMI(navController: NavHostController, userId: String) {
+
     val db = FirebaseFirestore.getInstance()
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     var petName by remember { mutableStateOf("") }
     var species by remember { mutableStateOf("") }
     var breed by remember { mutableStateOf("") }
+    var gender by remember { mutableStateOf("") }  // ✅ ADDED
     var age by remember { mutableStateOf("") }
     var weight by remember { mutableStateOf("") }
+
+    var fileUri by remember { mutableStateOf<Uri?>(null) }
+    var fileName by remember { mutableStateOf("") }
+
+    val pickFileLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            fileUri = uri
+            fileName = "pet_${System.currentTimeMillis()}.jpg"
+        }
+    }
+
+    var expanded by remember { mutableStateOf(false) }
+    val speciesOptions = listOf("Dog", "Cat")
+
+    // 🔥 Gender dropdown state
+    var genderExpanded by remember { mutableStateOf(false) }
+    val genderOptions = listOf("Male", "Female")
 
     Scaffold(
         topBar = {
@@ -51,133 +122,192 @@ fun PetBMI(navController: NavHostController, userId: String) {
             verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+
             OutlinedTextField(
                 value = petName,
                 onValueChange = { petName = it },
                 label = { Text("Pet Name") },
-                singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(Modifier.height(8.dp))
 
-            OutlinedTextField(
-                value = species,
-                onValueChange = { species = it },
-                label = { Text("Species") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(modifier = Modifier.height(8.dp))
+            // SPECIES DROPDOWN
+            ExposedDropdownMenuBox(
+                expanded = expanded,
+                onExpandedChange = { expanded = !expanded }
+            ) {
+                OutlinedTextField(
+                    readOnly = true,
+                    value = species,
+                    onValueChange = {},
+                    label = { Text("Species") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
+                    modifier = Modifier
+                        .menuAnchor()
+                        .fillMaxWidth()
+                )
+
+                ExposedDropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
+                ) {
+                    speciesOptions.forEach { option ->
+                        DropdownMenuItem(
+                            text = { Text(option) },
+                            onClick = {
+                                species = option
+                                expanded = false
+                            }
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(8.dp))
 
             OutlinedTextField(
                 value = breed,
                 onValueChange = { breed = it },
                 label = { Text("Breed") },
-                singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
-            Spacer(modifier = Modifier.height(8.dp))
+
+            Spacer(Modifier.height(8.dp))
+
+            // ✅ GENDER DROPDOWN
+            ExposedDropdownMenuBox(
+                expanded = genderExpanded,
+                onExpandedChange = { genderExpanded = !genderExpanded }
+            ) {
+                OutlinedTextField(
+                    value = gender,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Gender") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(genderExpanded) },
+                    modifier = Modifier
+                        .menuAnchor()
+                        .fillMaxWidth()
+                )
+
+                ExposedDropdownMenu(
+                    expanded = genderExpanded,
+                    onDismissRequest = { genderExpanded = false }
+                ) {
+                    genderOptions.forEach { option ->
+                        DropdownMenuItem(
+                            text = { Text(option) },
+                            onClick = {
+                                gender = option
+                                genderExpanded = false
+                            }
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(8.dp))
 
             OutlinedTextField(
                 value = age,
                 onValueChange = { age = it },
                 label = { Text("Age") },
-                singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth()
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(Modifier.height(8.dp))
 
             OutlinedTextField(
                 value = weight,
                 onValueChange = { weight = it },
                 label = { Text("Weight (kg)") },
-                singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 modifier = Modifier.fillMaxWidth()
             )
-            Spacer(modifier = Modifier.height(16.dp))
 
-            Text("Insert picture of your pet", fontSize = 14.sp, color = Color.Gray)
+            Spacer(Modifier.height(16.dp))
+
+            Text("Insert picture/video of your pet", fontSize = 14.sp, color = Color.Gray)
+
             OutlinedButton(
-                onClick = {
-                    Toast.makeText(
-                        context,
-                        "Upload not yet available",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                },
-                modifier = Modifier.fillMaxWidth()
+                onClick = { pickFileLauncher.launch("*/*") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .shadow(4.dp, RoundedCornerShape(10.dp))
             ) {
-                Text("Choose Files")
+                Text(if (fileUri == null) "Choose File" else "File Selected: $fileName")
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(Modifier.height(30.dp))
 
             Button(
                 onClick = {
-                    if (petName.isBlank() || species.isBlank() || breed.isBlank() || age.isBlank() || weight.isBlank()) {
-                        Toast.makeText(context, "Please fill in all fields", Toast.LENGTH_SHORT)
-                            .show()
-                    } else {
+
+                    if (petName.isBlank() || species.isBlank() || breed.isBlank() ||
+                        gender.isBlank() || age.isBlank() || weight.isBlank()
+                    ) {
+                        Toast.makeText(context, "Fill all fields", Toast.LENGTH_SHORT).show()
+                        return@Button
+                    }
+
+                    // ❌ User MUST select a picture
+                    if (fileUri == null) {
+                        Toast.makeText(context, "Please select an image", Toast.LENGTH_SHORT).show()
+                        return@Button
+                    }
+
+                    scope.launch {
+                        var uploadedUrl: String? = null
+
+                        try {
+                            val bytes = context.contentResolver
+                                .openInputStream(fileUri!!)!!
+                                .readBytes()
+
+                            SupabaseClientInstance.storage
+                                .from("pet_media")
+                                .upload(fileName, bytes, upsert = true)
+
+                            uploadedUrl = SupabaseClientInstance.storage
+                                .from("pet_media")
+                                .publicUrl(fileName)
+
+                        } catch (e: Exception) {
+                            Toast.makeText(context, "Upload failed", Toast.LENGTH_LONG).show()
+                        }
+
                         val petData = hashMapOf(
-                            "petName" to petName.trim(),
-                            "species" to species.trim(),
-                            "breed" to breed.trim(),
-                            "age" to age.trim(),
-                            "weight" to weight.trim()
+                            "petName" to petName,
+                            "species" to species,
+                            "breed" to breed,
+                            "gender" to gender,   // ✅ ALSO SAVED
+                            "age" to age,
+                            "weight" to weight,
+                            "mediaUrl" to (uploadedUrl ?: "")
                         )
 
-                        val petDocRef = db.collection("users")
-                            .document(userId)
+                        db.collection("users").document(userId)
                             .collection("pets")
-                            .document(petName.lowercase()) // ✅ use pet name as document ID
+                            .add(petData)
+                            .addOnSuccessListener {
 
-                        petDocRef.get().addOnSuccessListener { document ->
-                            if (document.exists()) {
-                                // 🔄 Update existing pet info
-                                petDocRef.update(petData as Map<String, Any>)
-                                    .addOnSuccessListener {
-                                        Toast.makeText(
-                                            context,
-                                            "Pet info updated successfully!",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                        navController.navigate("home/$userId") {
-                                            popUpTo("bmi_form/$userId") { inclusive = true }
-                                        }
-                                    }
-                            } else {
-                                // 🆕 Add new pet info
-                                petDocRef.set(petData)
-                                    .addOnSuccessListener {
-                                        Toast.makeText(
-                                            context,
-                                            "Pet added successfully!",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                        navController.navigate("home/$userId") {
-                                            popUpTo("bmi_form/$userId") { inclusive = true }
-                                        }
-                                    }
-                                    .addOnFailureListener {
-                                        Toast.makeText(
-                                            context,
-                                            "Error: ${it.message}",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                    }
+                                updatePetCount(userId)
+
+                                Toast.makeText(context, "Pet saved!", Toast.LENGTH_SHORT).show()
+                                navController.navigate("home/$userId")
                             }
-                        }
+                            .addOnFailureListener {
+                                Toast.makeText(context, "Failed to save", Toast.LENGTH_LONG).show()
+                            }
                     }
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(50.dp),
-                shape = RoundedCornerShape(8.dp),
+                    .height(50.dp)
+                    .shadow(6.dp, RoundedCornerShape(12.dp)),
                 colors = ButtonDefaults.buttonColors(containerColor = Color.Black)
             ) {
-                Text("Next", color = Color.White)
+                Text("Next", color = Color.White, fontWeight = FontWeight.Bold)
             }
         }
     }

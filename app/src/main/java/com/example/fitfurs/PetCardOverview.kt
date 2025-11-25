@@ -26,7 +26,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
 
 @Composable
-fun PetCardAct(
+fun PetCardOverview(
     petName: String,
     petImageUrl: String?,
     onClick: () -> Unit

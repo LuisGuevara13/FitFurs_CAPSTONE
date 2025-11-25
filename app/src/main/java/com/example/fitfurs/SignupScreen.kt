@@ -28,17 +28,15 @@ import androidx.navigation.NavHostController
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
-
-
 @Composable
 fun SignupScreen(navController: NavHostController) {
-    var fullName by remember { mutableStateOf("") }
+    var username by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val auth = FirebaseAuth.getInstance()
-    val db = FirebaseFirestore.getInstance() // for storing extra user info
+    val db = FirebaseFirestore.getInstance()
 
     Column(
         modifier = Modifier
@@ -83,11 +81,11 @@ fun SignupScreen(navController: NavHostController) {
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        // Full Name
+        // Username
         OutlinedTextField(
-            value = fullName,
-            onValueChange = { fullName = it },
-            label = { Text("Full Name") },
+            value = username,
+            onValueChange = { username = it },
+            label = { Text("Username") },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
@@ -137,17 +135,16 @@ fun SignupScreen(navController: NavHostController) {
         Button(
             onClick = {
                 when {
-                    fullName.isBlank() || email.isBlank() || password.isBlank() ->
+                    username.isBlank() || email.isBlank() || password.isBlank() ->
                         Toast.makeText(context, "All fields are required", Toast.LENGTH_SHORT).show()
                     else -> {
                         // Create Firebase Auth user
                         auth.createUserWithEmailAndPassword(email, password)
                             .addOnCompleteListener { task ->
                                 if (task.isSuccessful) {
-                                    // Save extra info in Firestore (without password)
                                     val userId = auth.currentUser?.uid ?: ""
                                     val userInfo = hashMapOf(
-                                        "fullName" to fullName,
+                                        "username" to username,
                                         "email" to email
                                     )
                                     db.collection("users").document(userId).set(userInfo)

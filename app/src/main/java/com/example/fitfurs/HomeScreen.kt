@@ -1,13 +1,14 @@
 package com.example.fitfurs
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -22,35 +23,71 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
+import coil.compose.rememberAsyncImagePainter
+import com.google.firebase.firestore.FirebaseFirestore
 
 @Composable
-fun HomeScreen(navController: NavHostController, username: String) {
+fun HomeScreen(navController: NavHostController, userId: String) {
+    val db = FirebaseFirestore.getInstance()
+
+    var username by remember { mutableStateOf("User") }
+    var profilePicUrl by remember { mutableStateOf<String?>(null) }
+
+    // Fetch username + profile picture
+    LaunchedEffect(userId) {
+        db.collection("users").document(userId)
+            .addSnapshotListener { document, _ ->
+                if (document != null && document.exists()) {
+                    username = document.getString("username") ?: "User"
+                    profilePicUrl = document.getString("profilePic")
+                }
+            }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // --- Top Bar ---
+
+        // --- Top Bar with Profile Picture ---
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
+
             Row(verticalAlignment = Alignment.CenterVertically) {
+
+                // ---- Profile Picture (Clickable) ----
                 Image(
-                    painter = painterResource(id = R.drawable.lebin),
+                    painter =
+                        if (profilePicUrl != null)
+                            rememberAsyncImagePainter(profilePicUrl)
+                        else painterResource(R.drawable.dog1),
                     contentDescription = "Profile Picture",
                     modifier = Modifier
                         .size(45.dp)
-                        .clip(CircleShape),
+                        .clip(CircleShape)
+                        .clickable {                       // 👈 MAKE IT CLICKABLE
+                            navController.navigate("settings/$userId")
+                        },
                     contentScale = ContentScale.Crop
                 )
+
                 Spacer(modifier = Modifier.width(8.dp))
+
+                // Username
                 Text(
                     buildAnnotatedString {
                         withStyle(SpanStyle(color = Color.Gray)) { append("Hello, ") }
-                        withStyle(SpanStyle(color = Color.Black, fontWeight = FontWeight.Bold)) {
+                        withStyle(
+                            SpanStyle(
+                                color = Color.Black,
+                                fontWeight = FontWeight.Bold
+                            )
+                        ) {
                             append(username)
                         }
                     },
@@ -58,8 +95,8 @@ fun HomeScreen(navController: NavHostController, username: String) {
                 )
             }
 
-            // ✅ Pass username when navigating to Settings
-            IconButton(onClick = { navController.navigate("settings/$username") }) {
+
+            IconButton(onClick = { navController.navigate("settings/$userId") }) {
                 Icon(
                     Icons.Default.Settings,
                     contentDescription = "Settings",
@@ -71,7 +108,7 @@ fun HomeScreen(navController: NavHostController, username: String) {
 
         Spacer(modifier = Modifier.height(60.dp))
 
-        // --- Title Section: Dog + Activities Side by Side ---
+        // --- Title Section ---
         Row(
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
@@ -98,19 +135,21 @@ fun HomeScreen(navController: NavHostController, username: String) {
         ActivityButton(
             iconRes = R.drawable.icon2,
             text = "Medical Tracking",
-            onClick = { navController.navigate("petlistmed/$username") }
+            onClick = { navController.navigate("petlistmed/$userId") }
         )
         Spacer(modifier = Modifier.height(24.dp))
+
         ActivityButton(
             iconRes = R.drawable.icon3,
             text = "Diet & Exercise",
-            onClick = { navController.navigate("petlist/$username") }
+            onClick = { navController.navigate("petlist/$userId") }
         )
         Spacer(modifier = Modifier.height(24.dp))
+
         ActivityButton(
             iconRes = R.drawable.overview,
             text = "Pet Overview",
-            onClick = { navController.navigate("petlist/$username") }
+            onClick = { navController.navigate("petoverview/$userId") }
         )
     }
 }

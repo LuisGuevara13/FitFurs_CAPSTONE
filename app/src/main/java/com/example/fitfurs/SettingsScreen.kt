@@ -1,5 +1,8 @@
 package com.example.fitfurs
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -7,127 +10,158 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Key
-import androidx.compose.material.icons.filled.Logout
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.PrivacyTip
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import coil.compose.rememberAsyncImagePainter
 import com.google.firebase.firestore.FirebaseFirestore
+import io.github.jan.supabase.storage.upload
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(navController: NavHostController, username: String) {
+fun SettingsScreen(navController: NavHostController, userId: String) {
+
     val db = FirebaseFirestore.getInstance()
 
-    var name by remember { mutableStateOf("") }
+    var username by remember { mutableStateOf("User") }
     var email by remember { mutableStateOf("") }
     var profilePicUrl by remember { mutableStateOf<String?>(null) }
 
-    // Fetch user data from Firestore
-    LaunchedEffect(username) {
-        db.collection("users").document(username)
+    // Fetch user data
+    LaunchedEffect(userId) {
+        db.collection("users").document(userId)
             .addSnapshotListener { snapshot, error ->
                 if (error == null && snapshot != null && snapshot.exists()) {
-                    name = snapshot.getString("name") ?: username
+                    username = snapshot.getString("username") ?: "User"
                     email = snapshot.getString("email") ?: ""
                     profilePicUrl = snapshot.getString("profilePic")
                 }
             }
     }
 
+    // Image picker launcher
+    val imagePickerLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+            if (uri != null) {
+                uploadProfilePicture(userId, uri, db) { newUrl ->
+                    profilePicUrl = newUrl
+                }
+            }
+        }
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Account", fontWeight = FontWeight.Bold, fontSize = 22.sp) },
+                title = {
+                    Text(
+                        "Account",
+                        fontSize = 22.sp,
+                        color = Color.Black
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Default.ArrowBack, contentDescription = null, tint = Color.Black)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
             )
         },
-        containerColor = Color(0xFFF5F5F5)
+        containerColor = Color.White
     ) { innerPadding ->
+
         Column(
-            modifier = Modifier
+            Modifier
                 .padding(innerPadding)
                 .fillMaxSize()
-                .padding(horizontal = 24.dp, vertical = 16.dp),
+                .padding(horizontal = 24.dp)
+                .background(Color.White),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
-            // --- Profile Header ---
-            Image(
-                painter = if (profilePicUrl != null)
-                    rememberAsyncImagePainter(profilePicUrl)
-                else painterResource(R.drawable.dog1),
-                contentDescription = "Profile Picture",
-                modifier = Modifier
-                    .size(90.dp)
-                    .clip(CircleShape)
-                    .background(Color.White),
-                contentScale = ContentScale.Crop
-            )
+            Spacer(Modifier.height(16.dp))
+
+            // ---------------- PROFILE WITH EDIT PEN ----------------
+            Box(
+                contentAlignment = Alignment.BottomEnd
+            ) {
+                Image(
+                    painter = if (profilePicUrl != null)
+                        rememberAsyncImagePainter(profilePicUrl)
+                    else painterResource(R.drawable.dog1),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(90.dp)
+                        .clip(CircleShape)
+                        .shadow(8.dp, CircleShape),
+                    contentScale = ContentScale.Crop
+                )
+
+                // PEN ICON
+                Box(
+                    modifier = Modifier
+                        .size(28.dp)
+                        .clip(CircleShape)
+                        .background(Color.White)
+                        .clickable { imagePickerLauncher.launch("image/*") },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Default.Edit, contentDescription = null, tint = Color.Black)
+                }
+            }
+
             Spacer(Modifier.height(10.dp))
-            Text(name, fontWeight = FontWeight.Bold, fontSize = 20.sp)
-            Text(email, color = Color.Gray, fontSize = 14.sp)
+            Text(username, fontSize = 20.sp)
+            Text(email, fontSize = 14.sp, color = Color.Gray)
 
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(24.dp))
 
-            // --- Personal Info Section ---
+            // ---------------- FIRST CARD GROUP ----------------
             SettingsGroup {
-                SettingItem(
-                    icon = Icons.Default.Person,
-                    title = "Personal Information",
-                    onClick = { navController.navigate("personal_info/$username") }
-                )
-                SettingItem(
-                    icon = Icons.Default.Key,
-                    title = "Password and Security",
-                    onClick = { navController.navigate("security_settings/$username") }
-                )
+                SettingItem("Personal Information", Icons.Default.Person) {
+                    navController.navigate("personal_info/$userId")
+                }
+                SettingItem("Password and Security", Icons.Default.Key) {
+                    navController.navigate("change_password/$userId")
+                }
             }
 
             Spacer(Modifier.height(16.dp))
 
-            // --- App Settings Section ---
+            // ---------------- SECOND CARD GROUP ----------------
             SettingsGroup {
-                SettingItem(
-                    icon = Icons.Default.Email,
-                    title = "Contacts",
-                    onClick = { navController.navigate("contacts") }
-                )
-                SettingItem(
-                    icon = Icons.Default.Notifications,
-                    title = "Notifications",
-                    onClick = { navController.navigate("notifications") }
-                )
-                SettingItem(
-                    icon = Icons.Default.Info,
-                    title = "About us",
-                    onClick = { navController.navigate("about") }
-                )
+                SettingItem("Contacts", Icons.Default.Email) {
+                    navController.navigate("contacts")
+                }
+                SettingItem("Notifications", Icons.Default.Notifications) {
+                    navController.navigate("notifications")
+                }
+                SettingItem("Privacy policy", Icons.Default.PrivacyTip) {
+                    navController.navigate("policy")
+                }
+                SettingItem("About Us", Icons.Default.Info) {
+                    navController.navigate("about_us")
+                }
             }
 
             Spacer(Modifier.height(16.dp))
 
-            // --- Logout Button ---
+            // ---------------- LOGOUT ----------------
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -136,24 +170,17 @@ fun SettingsScreen(navController: NavHostController, username: String) {
                             popUpTo("home") { inclusive = true }
                         }
                     },
-                shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                shape = RoundedCornerShape(16.dp),
+                elevation = CardDefaults.cardElevation(6.dp)
             ) {
-                Row(
-                    modifier = Modifier
+                Box(
+                    Modifier
                         .padding(16.dp)
                         .fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
+                    contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        Icons.Default.Logout,
-                        contentDescription = "Logout",
-                        tint = Color.Red
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text("Logout", color = Color.Red, fontWeight = FontWeight.Bold)
+                    Text("Logout", color = Color.Black)
                 }
             }
         }
@@ -166,13 +193,51 @@ fun SettingsGroup(content: @Composable ColumnScope.() -> Unit) {
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.cardElevation(6.dp)
     ) {
-        Column(modifier = Modifier.padding(vertical = 8.dp)) {
-            content()
-        }
+        Column(Modifier.padding(vertical = 8.dp)) { content() }
     }
 }
 
+@Composable
+fun SettingItem(title: String, icon: androidx.compose.ui.graphics.vector.ImageVector, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(icon, contentDescription = null, tint = Color.Black)
+        Spacer(Modifier.width(12.dp))
+        Text(title, color = Color.Black)
+    }
+}
 
+suspend fun uploadFileToSupabase(uri: Uri): String {
+    val storage = SupabaseClientInstance.storage
 
+    val fileName = "profile_${UUID.randomUUID()}.jpg"
+
+    val bucket = storage.from("profile-pictures")
+
+    return withContext(Dispatchers.IO) {
+        bucket.upload(fileName, uri, upsert = true)
+        bucket.publicUrl(fileName)
+    }
+}
+
+fun uploadProfilePicture(
+    userId: String,
+    uri: Uri,
+    db: FirebaseFirestore,
+    onUploaded: (String) -> Unit
+) {
+    kotlinx.coroutines.GlobalScope.launch(Dispatchers.IO) {
+        val newUrl = uploadFileToSupabase(uri)
+
+        db.collection("users").document(userId)
+            .update("profilePic", newUrl)
+            .addOnSuccessListener { onUploaded(newUrl) }
+    }
+}

@@ -20,11 +20,14 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.fitfurs.ui.theme.FitFursTheme
+import com.example.vetapp.screens.AddContactScreen
+
 
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
 
         // ✅ 1. Create notification channel (needed for all versions)
         createNotificationChannel()
@@ -53,6 +56,7 @@ class MainActivity : ComponentActivity() {
                 startActivity(intent)
             }
         }
+
 
         // ✅ 4. Continue app setup
         setContent {
@@ -100,6 +104,11 @@ fun AppNavigation(navController: NavHostController) {
             val username = backStackEntry.arguments?.getString("username") ?: ""
             PetListScreenMed(navController, username)
         }
+        composable("petoverview/{username}") { backStackEntry ->
+            val username = backStackEntry.arguments?.getString("username") ?: ""
+            PetListOverview(navController, username)
+        }
+
 
         composable("bmi_form/{username}") { backStackEntry ->
             val username = backStackEntry.arguments?.getString("username") ?: ""
@@ -132,6 +141,12 @@ fun AppNavigation(navController: NavHostController) {
             val username = backStackEntry.arguments?.getString("username") ?: ""
             SettingsScreen(navController, username)
         }
+        composable("pet_profile/{username}/{petId}") { backStackEntry ->
+            val username = backStackEntry.arguments?.getString("username") ?: ""
+            val petId = backStackEntry.arguments?.getString("petId") ?: ""
+            PetProfileScreen(navController, username, petId)
+        }
+
 
         composable("contacts") { ContactsScreen(navController) }
 
@@ -146,6 +161,20 @@ fun AppNavigation(navController: NavHostController) {
             val email = backStackEntry.arguments?.getString("email") ?: ""
             ResetPassword(navController, email)
         }
+        composable("personal_info/{username}") { backStackEntry ->
+            val username = backStackEntry.arguments?.getString("username") ?: ""
+            PersonalInfoScreen(navController, username)
+        }
+        composable("change_password/{username}") {
+            val username = it.arguments?.getString("username") ?: ""
+            ChangePasswordScreen(navController, username)
+        }
 
+        composable("add_contact") {
+            AddContactScreen(navController)
+        }
+        composable("policy") { PrivacyPolicyScreen (navController) }
+        composable("about_us") { AboutUsScreen(navController) }
     }
 }
+

@@ -2,12 +2,14 @@ package com.example.fitfurs
 
 import android.util.Log
 import android.widget.Toast
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -26,6 +28,11 @@ import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import coil.compose.AsyncImage
+import io.github.jan.supabase.storage.storage
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -41,22 +48,29 @@ fun MedicalTrackingScreen(
     val context = LocalContext.current
 
     val FitFursBlack = Color(0xFF000000)
-    val FitFursGrayText = Color(0xFF4A4A4A)
     val FitFursLightGray = Color(0xFFF7F7F7)
-    val FitFursBlue = Color(0xFF4A90E2)
+    val FitFursGrayText = Color(0xFF4A4A4A)
 
     var petName by remember { mutableStateOf<String?>(null) }
+    var petImageUrl by remember { mutableStateOf<String?>(null) }
     var isLoading by remember { mutableStateOf(true) }
+
     var appointmentList by remember { mutableStateOf<List<Map<String, Any>>>(emptyList()) }
     var medicalHistory by remember { mutableStateOf<List<Map<String, Any>>>(emptyList()) }
 
-    // --- Load pet name ---
+    // --- Load pet name + picture ---
     DisposableEffect(username, petId) {
         val reg = db.collection("users").document(username)
             .collection("pets").document(petId)
             .addSnapshotListener { snapshot, e ->
                 if (e != null) return@addSnapshotListener
+
                 petName = snapshot?.getString("petName") ?: "Unknown Pet"
+
+                // 🔥 Load Supabase Picture HERE
+                val mediaUrlRaw = snapshot?.getString("mediaUrl")
+                petImageUrl = resolvePetImageUrl(mediaUrlRaw)
+
                 isLoading = false
             }
         onDispose { reg.remove() }
@@ -114,7 +128,7 @@ fun MedicalTrackingScreen(
                 shape = RoundedCornerShape(16.dp),
                 contentColor = Color.White
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Add Appointment", tint = Color.White)
+                Icon(Icons.Default.Add, contentDescription = "Add Appointment")
             }
         },
         containerColor = FitFursLightGray
@@ -137,34 +151,53 @@ fun MedicalTrackingScreen(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // --- Static cards ---
+
+                // --- PET HEADER WITH IMAGE ---
                 item {
-                    Text(
-                        "Medical Tracking",
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = FitFursBlack
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Start
+                    ) {
 
-                    MedicalCard(
-                        title = "Vet Visit",
-                        rows = listOf("Last Exam" to "May 15, 2025", "Heartworm / Rx" to "Current"),
-                        backgroundColor = Color.White,
-                        titleColor = FitFursBlack
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
+                        if (petImageUrl != null) {
+                            AsyncImage(
+                                model = petImageUrl,
+                                contentDescription = "Pet Image",
+                                modifier = Modifier
+                                    .size(70.dp)
+                                    .clip(CircleShape)
+                                    .background(Color.White),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Image(
+                                painter = painterResource(R.drawable.dog1),
+                                contentDescription = "Default Pet Image",
+                                modifier = Modifier
+                                    .size(70.dp)
+                                    .clip(CircleShape)
+                                    .background(Color.White),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
 
-                    MedicalCard(
-                        title = "Upcoming",
-                        rows = listOf("June 18" to "10:30 AM - 4:00 PM"),
-                        backgroundColor = Color.White,
-                        titleColor = FitFursBlack
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.width(12.dp))
+
+                        Column {
+                            Text(
+                                text = petName ?: "Unknown Pet",
+                                fontSize = 22.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = FitFursBlack
+                            )
+                            Text("Medical Tracking", color = FitFursGrayText)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
 
-                // --- Medical History ---
+                // --- MEDICAL HISTORY ---
                 item {
                     Text(
                         "Medical History",
@@ -172,28 +205,25 @@ fun MedicalTrackingScreen(
                         fontWeight = FontWeight.SemiBold,
                         color = FitFursBlack
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    if (medicalHistory.isEmpty()) {
-                        Text("No medical history yet.", color = FitFursGrayText)
-                    } else {
-                        medicalHistory.forEach { record ->
-                            MedicalCard(
-                                title = record["title"]?.toString() ?: "Unknown",
-                                rows = listOf(
-                                    "Date" to (record["date"]?.toString() ?: "-"),
-                                    "Notes" to (record["notes"]?.toString() ?: "-")
-                                ),
-                                backgroundColor = Color.White,
-                                titleColor = FitFursBlack
-                            )
-                            Spacer(modifier = Modifier.height(12.dp))
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(16.dp))
                 }
 
-                // --- Scheduled Appointments ---
+                if (medicalHistory.isEmpty()) {
+                    item { Text("No medical history yet.", color = FitFursGrayText) }
+                } else {
+                    items(medicalHistory) { record ->
+                        MedicalCard(
+                            title = record["title"]?.toString() ?: "Unknown",
+                            rows = listOf(
+                                "Date" to (record["date"]?.toString() ?: "-"),
+                                "Notes" to (record["notes"]?.toString() ?: "-")
+                            ),
+                            backgroundColor = Color.White,
+                            titleColor = FitFursBlack
+                        )
+                    }
+                }
+
+                // --- APPOINTMENTS ---
                 item {
                     Text(
                         "Scheduled Appointments",
@@ -201,24 +231,22 @@ fun MedicalTrackingScreen(
                         fontWeight = FontWeight.SemiBold,
                         color = FitFursBlack
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
                 }
 
                 if (appointmentList.isEmpty()) {
                     item { Text("No appointments yet.", color = FitFursGrayText) }
                 } else {
                     items(appointmentList) { appointment ->
-                        AppointmentItem(
-                            appointment = appointment,
-                            username = username,
-                            petId = petId
-                        )
+                        AppointmentItem(appointment, username, petId)
                     }
                 }
             }
         }
     }
 }
+
+
+
 
 @Composable
 fun MedicalCard(title: String, rows: List<Pair<String, String>>, backgroundColor: Color, titleColor: Color) {

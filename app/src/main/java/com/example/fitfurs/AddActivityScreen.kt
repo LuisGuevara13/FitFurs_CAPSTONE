@@ -38,6 +38,11 @@ fun AddActivityScreen(navController: NavHostController, username: String, petId:
     var amount by remember { mutableStateOf("") }
     var showVetCalc by remember { mutableStateOf(false) }
 
+    val petRef = db.collection("users")
+        .document(username)
+        .collection("pets")
+        .document(petId)
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -68,7 +73,6 @@ fun AddActivityScreen(navController: NavHostController, username: String, petId:
                     Text("Add Meal", fontWeight = FontWeight.Bold, fontSize = 20.sp)
                     Spacer(Modifier.height(8.dp))
 
-                    // 🍖 Meal name
                     OutlinedTextField(
                         value = meal,
                         onValueChange = { meal = it },
@@ -104,7 +108,6 @@ fun AddActivityScreen(navController: NavHostController, username: String, petId:
 
                     Spacer(Modifier.height(8.dp))
 
-                    // 🍽 Amount input
                     OutlinedTextField(
                         value = amount,
                         onValueChange = { amount = it },
@@ -118,20 +121,25 @@ fun AddActivityScreen(navController: NavHostController, username: String, petId:
                     Button(
                         onClick = {
                             if (meal.isNotEmpty() && time.isNotEmpty() && amount.isNotEmpty()) {
+
                                 val newMeal = mapOf(
                                     "meal" to meal,
                                     "time" to time,
                                     "amount" to amount
                                 )
-                                val ref = db.collection("users").document(username)
-                                    .collection("pets").document(petId.lowercase())
-                                    .collection("mealtime")
 
-                                ref.add(newMeal)
+                                petRef.collection("mealtime")
+                                    .add(newMeal)
                                     .addOnSuccessListener {
                                         scheduleMealNotification(context, meal, time, username, petId)
-                                        Toast.makeText(context, "Meal added and reminder set!", Toast.LENGTH_SHORT).show()
-                                        meal = ""; time = ""; amount = ""
+                                        Toast.makeText(
+                                            context,
+                                            "Meal added and reminder set!",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                        meal = ""
+                                        time = ""
+                                        amount = ""
                                     }
                                     .addOnFailureListener {
                                         Toast.makeText(context, "Failed to add meal.", Toast.LENGTH_SHORT).show()
@@ -148,7 +156,6 @@ fun AddActivityScreen(navController: NavHostController, username: String, petId:
 
                     Spacer(Modifier.height(16.dp))
 
-                    // 🧮 Vet Calculator Button
                     Button(
                         onClick = { showVetCalc = true },
                         modifier = Modifier.fillMaxWidth(),
@@ -173,20 +180,16 @@ fun AddActivityScreen(navController: NavHostController, username: String, petId:
 
                     Button(
                         onClick = {
-                            val petRef = db.collection("users")
-                                .document(username)
-                                .collection("pets")
-                                .document(petId.lowercase())
-
                             petRef.get().addOnSuccessListener { document ->
                                 if (document.exists()) {
+
                                     val breed = document.getString("breed") ?: "Unknown"
                                     val weight = document.getString("weight")?.toDoubleOrNull() ?: 0.0
 
                                     val recommendation = when {
                                         weight < 5 -> "Short walks (10–15 mins, twice daily) for $breed"
                                         weight in 5.0..15.0 -> "Moderate walks (20–30 mins, twice daily) for $breed"
-                                        else -> "Active play and long walks (30–45 mins, twice daily) for $breed"
+                                        else -> "Active play & long walks (30–45 mins, twice daily) for $breed"
                                     }
 
                                     val durationMinutes = when {
@@ -203,15 +206,17 @@ fun AddActivityScreen(navController: NavHostController, username: String, petId:
                                         "timestamp" to System.currentTimeMillis()
                                     )
 
-                                    db.collection("users").document(username)
-                                        .collection("pets").document(petId.lowercase())
-                                        .collection("exercise")
-                                        .add(data)
+                                    petRef.collection("exercise").add(data)
 
+                                    // Example BMI calculation (you may adjust formula)
                                     val newBMI = (weight / 5).toString()
                                     petRef.update("petBMI", newBMI)
 
-                                    Toast.makeText(context, "Exercise recommendation saved!", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(
+                                        context,
+                                        "Exercise recommendation saved!",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
                                 } else {
                                     Toast.makeText(context, "Pet data not found!", Toast.LENGTH_SHORT).show()
                                 }
@@ -226,7 +231,6 @@ fun AddActivityScreen(navController: NavHostController, username: String, petId:
             }
         }
 
-        // 🔹 Vet Food Calculator Dialog
         if (showVetCalc) {
             AlertDialog(
                 onDismissRequest = { showVetCalc = false },

@@ -1,16 +1,13 @@
 package com.example.fitfurs
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
@@ -19,26 +16,72 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun ContactCard(name: String, role: String, phone: String) {
-    Column(
+fun ContactCard(
+    contact: ContactItem,
+    onCall: (String) -> Unit
+) {
+    Card(
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(2.dp, RoundedCornerShape(16.dp))
-            .background(Color.White, RoundedCornerShape(16.dp))
-            .padding(16.dp)
+            .padding(vertical = 8.dp)
+            .shadow(18.dp, RoundedCornerShape(16.dp)),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.White   // <-- FORCED WHITE BACKGROUND
+        )
     ) {
-        Text(name, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
-        Text(role, fontSize = 14.sp, color = Color.Gray)
-        Spacer(Modifier.height(8.dp))
-        Row(
+
+        Column(
             modifier = Modifier
+                .padding(16.dp)
                 .fillMaxWidth()
-                .background(Color(0xFFF0F0F0), RoundedCornerShape(12.dp))
-                .padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Number", fontSize = 14.sp, color = Color.Gray, modifier = Modifier.weight(1f))
-            Text(phone, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+
+            // NAME (header)
+            Text(
+                text = contact.name,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.Black
+            )
+
+            Spacer(Modifier.height(12.dp))
+
+            // CLINIC NAME BOX
+            Surface(
+                color = Color.White,
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(modifier = Modifier.padding(14.dp)) {
+                    Text(
+                        "Clinic Name:",
+                        color = Color.Black,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text(contact.clinicName, color = Color.Black)
+                }
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            // PHONE NUMBER BOX
+            Surface(
+                color = Color.White,
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onCall(contact.phone) }
+            ) {
+                Row(modifier = Modifier.padding(14.dp)) {
+                    Text(
+                        "Number:",
+                        color = Color.Black,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text(contact.phone, color = Color.Black)
+                }
+            }
         }
     }
 }

@@ -1,6 +1,5 @@
 package com.example.fitfurs
 
-import com.example.fitfurs.PetCardAct
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -44,11 +43,17 @@ import androidx.navigation.NavHostController
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlin.collections.set
 
+
 @Composable
 fun PetListScreen(navController: NavHostController, username: String) {
     val db = FirebaseFirestore.getInstance()
     var pets by remember { mutableStateOf<List<Map<String, Any>>>(emptyList()) }
     val context = LocalContext.current
+
+    // Helper function to generate public URL from Supabase Storage
+    fun getSupabasePublicUrl(fileName: String): String {
+        return SupabaseClientInstance.storage.from("pet_media").publicUrl(fileName)
+    }
 
     DisposableEffect(username) {
         val registration = db.collection("users")
@@ -153,7 +158,6 @@ fun PetListScreen(navController: NavHostController, username: String) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // --- Scrollable Pet List ---
             if (pets.isEmpty()) {
                 Text(
                     text = "No pets yet. Add one!",
@@ -164,18 +168,29 @@ fun PetListScreen(navController: NavHostController, username: String) {
                 )
             } else {
                 LazyColumn(
-                    modifier = Modifier
-                        .weight(1f),
-                    verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp)
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(pets) { pet ->
                         val petName = pet["petName"]?.toString() ?: "Unnamed Pet"
                         val petId = pet["id"]?.toString() ?: ""
 
+                        // Extract file name or URL stored in Firestore, assuming mediaUrl holds filename or URL:
+                        val mediaUrlRaw = pet["mediaUrl"]?.toString() ?: ""
+                        val petImageUrl = if (mediaUrlRaw.isNotBlank()) {
+                            if (mediaUrlRaw.startsWith("http")) {
+                                mediaUrlRaw
+                            } else {
+                                // Assume only filename stored, get public URL from Supabase
+                                getSupabasePublicUrl(mediaUrlRaw)
+                            }
+                        } else null
+
                         PetCardAct(
                             petName = petName,
+                            petImageUrl = petImageUrl,
                             onClick = {
-                                navController.navigate("pet_activity/$username/$petId") // Correct interpolation
+                                navController.navigate("pet_activity/$username/$petId")
                             }
                         )
                     }
@@ -184,3 +199,5 @@ fun PetListScreen(navController: NavHostController, username: String) {
         }
     }
 }
+
+
