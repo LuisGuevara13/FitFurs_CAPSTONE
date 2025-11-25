@@ -154,8 +154,6 @@ fun AppNavigation(navController: NavHostController) {
         //ForgotPassword screen shit
         composable("forgot_password") { ForgotPassword(navController) }
 
-        composable("forgot_password") { ForgotPassword(navController) }
-
         //ResetPassword screen shit
         composable("reset_password/{email}") { backStackEntry ->
             val email = backStackEntry.arguments?.getString("email") ?: ""
@@ -169,7 +167,6 @@ fun AppNavigation(navController: NavHostController) {
             val username = it.arguments?.getString("username") ?: ""
             ChangePasswordScreen(navController, username)
         }
-
         composable("add_contact") {
             AddContactScreen(navController)
         }

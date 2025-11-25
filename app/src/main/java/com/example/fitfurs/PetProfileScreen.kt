@@ -77,11 +77,21 @@ fun PetProfileScreen(navController: NavHostController, username: String, petId: 
                         petName = snapshot.getString("petName") ?: "",
                         species = snapshot.getString("species") ?: "",
                         breed = snapshot.getString("breed") ?: "",
-                        age = snapshot.getString("age") ?: "",
+                        age = when (val value = snapshot.get("age")) {
+                            is Long -> value.toString()
+                            is String -> value
+                            else -> ""
+                        },
                         gender = snapshot.getString("gender") ?: "",
-                        weight = snapshot.getString("weight") ?: "",
+                        weight = when (val value = snapshot.get("weight")) {
+                            is Long -> value.toString()
+                            is String -> value
+                            else -> ""
+                        },
                         mediaUrl = snapshot.getString("mediaUrl") ?: ""
                     )
+
+
                 }
 
                 loading = false

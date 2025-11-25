@@ -1,6 +1,6 @@
 package com.example.fitfurs
 
-import android.util.Log
+import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -8,10 +8,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
@@ -25,17 +23,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.google.firebase.firestore.FirebaseFirestore
-import kotlinx.coroutines.tasks.await
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import coil.compose.AsyncImage
-import io.github.jan.supabase.storage.storage
-import java.text.SimpleDateFormat
 import java.util.Locale
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -67,7 +60,6 @@ fun MedicalTrackingScreen(
 
                 petName = snapshot?.getString("petName") ?: "Unknown Pet"
 
-                // 🔥 Load Supabase Picture HERE
                 val mediaUrlRaw = snapshot?.getString("mediaUrl")
                 petImageUrl = resolvePetImageUrl(mediaUrlRaw)
 
@@ -76,7 +68,7 @@ fun MedicalTrackingScreen(
         onDispose { reg.remove() }
     }
 
-    // --- Load appointments ---
+    // --- Load appointments (with hidden filter) ---
     DisposableEffect(username, petId) {
         val reg2 = db.collection("users").document(username)
             .collection("pets").document(petId)
@@ -84,12 +76,15 @@ fun MedicalTrackingScreen(
             .orderBy("timestamp")
             .addSnapshotListener { snapshot, e ->
                 if (e != null || snapshot == null) return@addSnapshotListener
-                appointmentList = snapshot.documents.mapNotNull { it.data }
+
+                appointmentList = snapshot.documents.map { doc ->
+                    doc.data?.toMutableMap()?.apply { this["id"] = doc.id } ?: emptyMap()
+                }.filter { it["hidden"] != true }
             }
         onDispose { reg2.remove() }
     }
 
-    // --- Load medical history ---
+    // --- Load medical history (FIXED) ---
     DisposableEffect(username, petId) {
         val reg3 = db.collection("users").document(username)
             .collection("pets").document(petId)
@@ -97,7 +92,10 @@ fun MedicalTrackingScreen(
             .orderBy("timestamp")
             .addSnapshotListener { snapshot, e ->
                 if (e != null || snapshot == null) return@addSnapshotListener
-                medicalHistory = snapshot.documents.mapNotNull { it.data }
+
+                medicalHistory = snapshot.documents.map { doc ->
+                    doc.data?.toMutableMap()?.apply { this["id"] = doc.id } ?: emptyMap()
+                }
             }
         onDispose { reg3.remove() }
     }
@@ -152,13 +150,12 @@ fun MedicalTrackingScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
 
-                // --- PET HEADER WITH IMAGE ---
+                // --- PET HEADER ---
                 item {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Start
                     ) {
-
                         if (petImageUrl != null) {
                             AsyncImage(
                                 model = petImageUrl,
@@ -193,11 +190,9 @@ fun MedicalTrackingScreen(
                             Text("Medical Tracking", color = FitFursGrayText)
                         }
                     }
-
-                    Spacer(modifier = Modifier.height(8.dp))
                 }
 
-                // --- MEDICAL HISTORY ---
+                // --- MEDICAL HISTORY TITLE ---
                 item {
                     Text(
                         "Medical History",
@@ -207,6 +202,7 @@ fun MedicalTrackingScreen(
                     )
                 }
 
+                // --- MEDICAL HISTORY LIST ---
                 if (medicalHistory.isEmpty()) {
                     item { Text("No medical history yet.", color = FitFursGrayText) }
                 } else {
@@ -223,7 +219,7 @@ fun MedicalTrackingScreen(
                     }
                 }
 
-                // --- APPOINTMENTS ---
+                // --- APPOINTMENTS TITLE ---
                 item {
                     Text(
                         "Scheduled Appointments",
@@ -233,6 +229,7 @@ fun MedicalTrackingScreen(
                     )
                 }
 
+                // --- APPOINTMENTS LIST ---
                 if (appointmentList.isEmpty()) {
                     item { Text("No appointments yet.", color = FitFursGrayText) }
                 } else {
@@ -244,9 +241,6 @@ fun MedicalTrackingScreen(
         }
     }
 }
-
-
-
 
 @Composable
 fun MedicalCard(title: String, rows: List<Pair<String, String>>, backgroundColor: Color, titleColor: Color) {
@@ -284,39 +278,20 @@ fun AppointmentItem(
 
     var showDialog by remember { mutableStateOf(false) }
 
-    // Parse appointment date + time
-    val sdf = SimpleDateFormat("MM/dd/yyyy hh:mm a", Locale.getDefault())
-    val appointmentDateTime = try {
-        sdf.parse("${appointment["date"]} ${appointment["time"]}")
-    } catch (e: Exception) {
-        null
+    // Normalize
+    val rawStatus = (appointment["status"]?.toString() ?: "").lowercase()
+    val status = when (rawStatus) {
+        "scheduled" -> "Scheduled"
+        "pending" -> "Pending"
+        "completed" -> "Completed"
+        "cancelled", "canceled" -> "Cancelled"
+        else -> "Unknown"
     }
 
-    val currentTime = System.currentTimeMillis()
-    val status = when {
-        appointment["status"]?.toString() == "cancelled" -> "Cancelled"
-        appointmentDateTime == null -> "Unknown"
-        currentTime < appointmentDateTime.time -> "Scheduled"
-        currentTime in appointmentDateTime.time..(appointmentDateTime.time + 2 * 3600_000) -> "Pending"
-        else -> "Cancelled" // automatically after 2 hours
-    }
+    val docId = appointment["id"].toString()
+    val db = FirebaseFirestore.getInstance()
 
-    // Update Firestore automatically if needed
-    LaunchedEffect(status, appointment["id"]) {
-        val db = FirebaseFirestore.getInstance()
-        val docId = appointment["id"].toString()
-        if ((status == "Pending" || status == "Cancelled") &&
-            appointment["status"] != status
-        ) {
-            db.collection("users").document(username)
-                .collection("pets").document(petId)
-                .collection("appointments")
-                .document(docId)
-                .update("status", status)
-                .addOnSuccessListener { Log.d("AppointmentStatus", "$docId updated to $status") }
-        }
-    }
-
+    // Cancel dialog
     if (showDialog && status == "Scheduled") {
         AlertDialog(
             onDismissRequest = { showDialog = false },
@@ -325,16 +300,12 @@ fun AppointmentItem(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        val db = FirebaseFirestore.getInstance()
-                        val docId = appointment["id"].toString()
                         db.collection("users").document(username)
                             .collection("pets").document(petId)
-                            .collection("appointments")
-                            .document(docId)
-                            .update("status", "cancelled")
-                            .addOnSuccessListener {
-                                Toast.makeText(context, "Appointment cancelled", Toast.LENGTH_SHORT).show()
-                            }
+                            .collection("appointments").document(docId)
+                            .update("status", "Cancelled")
+
+                        Toast.makeText(context, "Appointment cancelled", Toast.LENGTH_SHORT).show()
                         showDialog = false
                     }
                 ) { Text("Yes") }
@@ -345,6 +316,7 @@ fun AppointmentItem(
         )
     }
 
+    // UI
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -354,12 +326,25 @@ fun AppointmentItem(
         elevation = CardDefaults.cardElevation(2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("${appointment["date"]}", color = FitFursBlack, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                Text("Status: $status", color = if (status == "Cancelled") Color.Red else Color.Blue, fontWeight = FontWeight.SemiBold)
+                Text(
+                    "${appointment["date"]}",
+                    color = FitFursBlack,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
+                )
+                Text(
+                    "Status: $status",
+                    color = when (status) {
+                        "Cancelled" -> Color.Red
+                        "Completed" -> Color.Gray
+                        else -> Color.Blue
+                    }
+                )
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -370,50 +355,111 @@ fun AppointmentItem(
             ) {
                 Column {
                     Text("Time", color = Color.Gray, fontSize = 14.sp)
-                    Text(appointment["time"].toString(), fontWeight = FontWeight.Medium, color = FitFursBlack)
+                    Text(appointment["time"].toString(), fontWeight = FontWeight.Medium)
                 }
                 Column {
                     Text("Reason", color = Color.Gray, fontSize = 14.sp)
-                    Text(appointment["reason"].toString(), color = FitFursBlack)
+                    Text(appointment["reason"].toString())
                 }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            if (status == "Scheduled") {
-                Button(
-                    onClick = { showDialog = true },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = FitFursBlack,
-                        contentColor = Color.White
-                    ),
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(50.dp)
-                ) {
-                    Text("Cancel Appointment", fontWeight = FontWeight.Bold)
+            // --- BUTTON LOGIC FIXED ---
+            when (status) {
+                "Scheduled" -> {
+                    Button(
+                        onClick = { showDialog = true },
+                        colors = ButtonDefaults.buttonColors(FitFursBlack, Color.White),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth().height(50.dp)
+                    ) { Text("Cancel Appointment", fontWeight = FontWeight.Bold) }
                 }
-            } else {
-                Button(
-                    onClick = { },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.Gray,
-                        contentColor = Color.White
-                    ),
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(50.dp)
-                ) {
-                    Text(status, fontWeight = FontWeight.Bold)
+
+                "Pending" -> {
+                    Button(
+                        onClick = {
+                            Toast.makeText(context, "Already completed", Toast.LENGTH_SHORT).show()
+                        },
+                        colors = ButtonDefaults.buttonColors(Color(0xFF4CAF50), Color.White),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth().height(50.dp)
+                    ) { Text("Mark as Completed", fontWeight = FontWeight.Bold) }
+                }
+
+                "Completed" -> {
+                    Button(
+                        onClick = {
+                            markAppointmentCompleted(appointment, username, petId, context)
+                        },
+                        colors = ButtonDefaults.buttonColors(Color.Gray, Color.White),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth().height(50.dp)
+                    ) {
+                        Text("Completed", fontWeight = FontWeight.Bold)
+                    }
+                }
+
+                "Cancelled" -> {
+                    Button(
+                        onClick = {
+                            db.collection("users").document(username)
+                                .collection("pets").document(petId)
+                                .collection("appointments").document(docId)
+                                .update("hidden", true)
+                        },
+                        colors = ButtonDefaults.buttonColors(Color.Red, Color.White),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth().height(50.dp)
+                    ) {
+                        Text("Remove", fontWeight = FontWeight.Bold)
+                    }
                 }
             }
         }
     }
 }
 
+fun markAppointmentCompleted(
+    appointment: Map<String, Any>,
+    username: String,
+    petId: String,
+    context: Context
+) {
+    val db = FirebaseFirestore.getInstance()
+    val docId = appointment["id"].toString()
 
+    // Fix: safely extract fields so they never become null
+    val date = appointment["date"]?.toString() ?: ""
+    val time = appointment["time"]?.toString() ?: ""
+    val reason = appointment["reason"]?.toString() ?: ""
 
+    // Update status
+    db.collection("users").document(username)
+        .collection("pets").document(petId)
+        .collection("appointments")
+        .document(docId)
+        .update("status", "Completed")
 
+    // Medical History entry
+    val medicalData = mapOf(
+        "title" to "Appointment Completed",
+        "date" to date,
+        "time" to time,
+        "notes" to reason,
+        "appointmentId" to docId,
+        "petId" to petId,
+        "timestamp" to System.currentTimeMillis()
+    )
 
+    db.collection("users").document(username)
+        .collection("pets").document(petId)
+        .collection("medicalHistory")
+        .add(medicalData)
+        .addOnSuccessListener {
+            Toast.makeText(context, "Added to medical history", Toast.LENGTH_SHORT).show()
+        }
+        .addOnFailureListener {
+            Toast.makeText(context, "Failed to add medical history: ${it.message}", Toast.LENGTH_SHORT).show()
+        }
+}
