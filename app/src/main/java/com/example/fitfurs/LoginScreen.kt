@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -28,9 +29,10 @@ import androidx.navigation.NavHostController
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(navController: NavHostController) {
-    var userInput by remember { mutableStateOf("") } // can be username or email
+    var userInput by remember { mutableStateOf("") } // username or email
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
 
@@ -65,7 +67,7 @@ fun LoginScreen(navController: NavHostController) {
         Text(
             text = "Login",
             fontSize = 28.sp,
-            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+            fontWeight = FontWeight.Bold,
             color = Color.Black
         )
 
@@ -85,11 +87,20 @@ fun LoginScreen(navController: NavHostController) {
         OutlinedTextField(
             value = userInput,
             onValueChange = { userInput = it },
-            placeholder = { Text("Username or Email") },
+            placeholder = { Text("Username or Email", color = Color.Black) },
+            textStyle = TextStyle(color = Color.Black),
             singleLine = true,
             modifier = Modifier.fillMaxWidth().height(56.dp),
-            shape = RoundedCornerShape(12.dp)
+            shape = RoundedCornerShape(12.dp),
+            colors = TextFieldDefaults.outlinedTextFieldColors(
+                focusedBorderColor = Color.Black,
+                unfocusedBorderColor = Color.Gray,
+                cursorColor = Color.Black,
+                focusedLabelColor = Color.Black,
+                unfocusedLabelColor = Color.Black
+            )
         )
+
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -97,18 +108,30 @@ fun LoginScreen(navController: NavHostController) {
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
-            placeholder = { Text("Password") },
+            placeholder = { Text("Password", color = Color.Black) },
+            textStyle = TextStyle(color = Color.Black),
             singleLine = true,
             visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
             trailingIcon = {
-                val image = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff
                 IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                    Icon(imageVector = image, contentDescription = null)
+                    Icon(
+                        imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                        contentDescription = null,
+                        tint = Color.Black
+                    )
                 }
             },
             modifier = Modifier.fillMaxWidth().height(56.dp),
-            shape = RoundedCornerShape(12.dp)
+            shape = RoundedCornerShape(12.dp),
+            colors = TextFieldDefaults.outlinedTextFieldColors(
+                focusedBorderColor = Color.Black,
+                unfocusedBorderColor = Color.Gray,
+                cursorColor = Color.Black,
+                focusedLabelColor = Color.Black,
+                unfocusedLabelColor = Color.Black
+            )
         )
+
 
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -133,7 +156,7 @@ fun LoginScreen(navController: NavHostController) {
                 }
 
                 if (Patterns.EMAIL_ADDRESS.matcher(userInput).matches()) {
-                    // Input is email
+                    // If input is email
                     auth.signInWithEmailAndPassword(userInput, password)
                         .addOnCompleteListener { task ->
                             if (task.isSuccessful) {
@@ -147,7 +170,7 @@ fun LoginScreen(navController: NavHostController) {
                             }
                         }
                 } else {
-                    // Input is username → fetch corresponding email from Firestore
+                    // Input is username → fetch email from Firestore
                     db.collection("users")
                         .whereEqualTo("username", userInput)
                         .get()
@@ -155,6 +178,7 @@ fun LoginScreen(navController: NavHostController) {
                             if (!querySnapshot.isEmpty) {
                                 val userEmail = querySnapshot.documents[0].getString("email") ?: ""
                                 val userId = querySnapshot.documents[0].id
+
                                 if (userEmail.isNotEmpty()) {
                                     auth.signInWithEmailAndPassword(userEmail, password)
                                         .addOnCompleteListener { task ->
@@ -188,7 +212,7 @@ fun LoginScreen(navController: NavHostController) {
 
         Spacer(modifier = Modifier.height(25.dp))
 
-        // Sign Up Prompt
+        // Sign Up
         Row(horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth()) {
             Text(text = "Don't have an account? ", color = Color.Gray, fontSize = 14.sp)
             Text(

@@ -90,8 +90,6 @@ fun PetProfileScreen(navController: NavHostController, username: String, petId: 
                         },
                         mediaUrl = snapshot.getString("mediaUrl") ?: ""
                     )
-
-
                 }
 
                 loading = false
@@ -154,13 +152,17 @@ fun PetProfileScreen(navController: NavHostController, username: String, petId: 
                 title = {},
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            Icons.Default.ArrowBack,
+                            contentDescription = "Back",
+                            tint = Color.Black // ← FIXED
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
             )
         },
-        containerColor = Color(0xFFF9F8FB)
+        containerColor = Color.White
     ) { padding ->
 
         if (loading) {
@@ -181,6 +183,7 @@ fun PetProfileScreen(navController: NavHostController, username: String, petId: 
                 modifier = Modifier
                     .padding(padding)
                     .fillMaxSize()
+                    .background(Color.White) // ← FORCE WHITE BG
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 20.dp, vertical = 20.dp)
             ) {
@@ -210,11 +213,12 @@ fun PetProfileScreen(navController: NavHostController, username: String, petId: 
                         Text(
                             text = p.petName.ifBlank { "-" },
                             fontSize = 23.sp,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Black   // ← FIXED
                         )
                     }
 
-                    // FitFurs Logo (local file)
+                    // FitFurs Logo
                     Icon(
                         painter = painterResource(id = R.drawable.icon_logo),
                         contentDescription = "FitFurs Logo",
@@ -228,10 +232,10 @@ fun PetProfileScreen(navController: NavHostController, username: String, petId: 
                 // Current Exercise
                 if (exerciseName.isNotBlank()) {
                     FullCard {
-                        Text("CURRENT EXERCISE", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Text("CURRENT EXERCISE", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.Black)
                         Spacer(modifier = Modifier.height(10.dp))
-                        Text("Exercise: $exerciseName", fontSize = 14.sp)
-                        Text("Duration: $exerciseDuration", fontSize = 14.sp)
+                        Text("Exercise: $exerciseName", fontSize = 14.sp, color = Color.Black)
+                        Text("Duration: $exerciseDuration", fontSize = 14.sp, color = Color.Black)
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -240,17 +244,17 @@ fun PetProfileScreen(navController: NavHostController, username: String, petId: 
                 // Latest Meal
                 if (foodMeal.isNotBlank()) {
                     FullCard {
-                        Text("LATEST MEAL", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Text("LATEST MEAL", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.Black)
                         Spacer(modifier = Modifier.height(10.dp))
-                        Text("Meal: $foodMeal", fontSize = 14.sp)
-                        Text("Amount: $foodAmount", fontSize = 14.sp)
-                        Text("Time: $foodTime", fontSize = 14.sp)
+                        Text("Meal: $foodMeal", fontSize = 14.sp, color = Color.Black)
+                        Text("Amount: $foodAmount", fontSize = 14.sp, color = Color.Black)
+                        Text("Time: $foodTime", fontSize = 14.sp, color = Color.Black)
                     }
 
                     Spacer(modifier = Modifier.height(18.dp))
                 }
 
-                // 2x2 Grid: Gender, Breed, Weight, Age+Species
+                // 2x2 Grid
                 Column(modifier = Modifier.fillMaxWidth()) {
 
                     Row(

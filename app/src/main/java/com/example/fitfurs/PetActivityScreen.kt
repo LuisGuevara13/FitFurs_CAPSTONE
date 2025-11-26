@@ -64,7 +64,7 @@ fun PetActivityScreen(navController: NavHostController, username: String, petId:
     val mealList = remember { mutableStateListOf<Pair<String, Map<String, Any>>>() }
     val exerciseList = remember { mutableStateListOf<Pair<String, Map<String, Any>>>() }
 
-    // --- Load Pet Info ---
+    // Load pet info
     DisposableEffect(username, petId) {
         val reg = db.collection("users").document(username)
             .collection("pets").document(petId)
@@ -79,7 +79,7 @@ fun PetActivityScreen(navController: NavHostController, username: String, petId:
         onDispose { reg.remove() }
     }
 
-    // --- Load Meals ---
+    // Load Meals
     DisposableEffect(Unit) {
         val mealReg = db.collection("users").document(username)
             .collection("pets").document(petId)
@@ -89,7 +89,7 @@ fun PetActivityScreen(navController: NavHostController, username: String, petId:
                     mealList.clear()
                     mealList.addAll(
                         snap.documents
-                            .filter { it.getBoolean("hidden") != true }  // Hide flagged items
+                            .filter { it.getBoolean("hidden") != true }
                             .map { it.id to (it.data ?: emptyMap()) }
                     )
                 }
@@ -97,7 +97,7 @@ fun PetActivityScreen(navController: NavHostController, username: String, petId:
         onDispose { mealReg.remove() }
     }
 
-    // --- Load Exercises ---
+    // Load Exercises
     DisposableEffect(Unit) {
         val exReg = db.collection("users").document(username)
             .collection("pets").document(petId)
@@ -107,7 +107,7 @@ fun PetActivityScreen(navController: NavHostController, username: String, petId:
                     exerciseList.clear()
                     exerciseList.addAll(
                         snap.documents
-                            .filter { it.getBoolean("hidden") != true }  // Hide flagged items
+                            .filter { it.getBoolean("hidden") != true }
                             .map { it.id to (it.data ?: emptyMap()) }
                     )
                 }
@@ -141,14 +141,18 @@ fun PetActivityScreen(navController: NavHostController, username: String, petId:
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Add")
             }
-        }
+        },
+        containerColor = Color.White
     ) { padding ->
 
         if (isLoading) {
             Box(
-                modifier = Modifier.fillMaxSize().padding(padding),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.White)
+                    .padding(padding),
                 contentAlignment = Alignment.Center
-            ) { CircularProgressIndicator() }
+            ) { CircularProgressIndicator(color = Color.Black) }
 
         } else {
 
@@ -156,11 +160,12 @@ fun PetActivityScreen(navController: NavHostController, username: String, petId:
                 modifier = Modifier
                     .padding(padding)
                     .fillMaxSize()
+                    .background(Color.White)
                     .padding(16.dp)
                     .verticalScroll(rememberScrollState())
             ) {
 
-                // --- Pet Header ---
+                // PET HEADER
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
@@ -174,12 +179,17 @@ fun PetActivityScreen(navController: NavHostController, username: String, petId:
 
                     Spacer(Modifier.width(12.dp))
 
-                    Text(petName ?: "Unknown Pet", fontWeight = FontWeight.Bold, fontSize = 22.sp)
+                    Text(
+                        petName ?: "Unknown Pet",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 22.sp,
+                        color = Color.Black
+                    )
                 }
 
                 Spacer(Modifier.height(24.dp))
 
-                // =============== MEAL PLANS ===============
+                // MEAL PLANS
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
@@ -188,7 +198,12 @@ fun PetActivityScreen(navController: NavHostController, username: String, petId:
                 ) {
                     Column(Modifier.padding(16.dp)) {
 
-                        Text("Meal Plans", fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                        Text(
+                            "Meal Plans",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 20.sp,
+                            color = Color.Black
+                        )
                         Spacer(Modifier.height(8.dp))
 
                         if (mealList.isEmpty()) {
@@ -204,7 +219,10 @@ fun PetActivityScreen(navController: NavHostController, username: String, petId:
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text("🍽 $mealName – $mealTime ($amount)")
+                                Text(
+                                    "🍽 $mealName – $mealTime ($amount)",
+                                    color = Color.Black
+                                )
 
                                 Button(
                                     onClick = {
@@ -227,7 +245,7 @@ fun PetActivityScreen(navController: NavHostController, username: String, petId:
 
                 Spacer(Modifier.height(24.dp))
 
-                // =============== EXERCISES ===============
+                // EXERCISES
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
@@ -236,7 +254,12 @@ fun PetActivityScreen(navController: NavHostController, username: String, petId:
                 ) {
                     Column(Modifier.padding(16.dp)) {
 
-                        Text("Exercises", fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                        Text(
+                            "Exercises",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 20.sp,
+                            color = Color.Black
+                        )
                         Spacer(Modifier.height(8.dp))
 
                         if (exerciseList.isEmpty()) {
@@ -258,7 +281,7 @@ fun PetActivityScreen(navController: NavHostController, username: String, petId:
 
                             Column(Modifier.fillMaxWidth()) {
 
-                                Text("🏃 $rec")
+                                Text("🏃 $rec", color = Color.Black)
                                 Spacer(Modifier.height(6.dp))
 
                                 if (isRunning) {
@@ -267,7 +290,7 @@ fun PetActivityScreen(navController: NavHostController, username: String, petId:
                                             remainingSeconds / 60,
                                             remainingSeconds % 60
                                         ),
-                                        color = Color.Red
+                                        color = Color.Black
                                     )
                                 } else if (showConfirm) {
                                     Text("✅ Exercise finished!", color = Color.Green)
@@ -302,10 +325,12 @@ fun PetActivityScreen(navController: NavHostController, username: String, petId:
                                                     db.collection("users").document(username)
                                                         .collection("pets").document(petId)
                                                         .collection("exercise").document(exId)
-                                                        .update(mapOf(
-                                                            "status" to "Completed",
-                                                            "hidden" to true
-                                                        ))
+                                                        .update(
+                                                            mapOf(
+                                                                "status" to "Completed",
+                                                                "hidden" to true
+                                                            )
+                                                        )
 
                                                     showConfirm = false
                                                     Toast.makeText(context, "Exercise marked done!", Toast.LENGTH_SHORT).show()

@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -28,12 +29,14 @@ import androidx.navigation.NavHostController
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SignupScreen(navController: NavHostController) {
     var username by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
+
     val context = LocalContext.current
     val auth = FirebaseAuth.getInstance()
     val db = FirebaseFirestore.getInstance()
@@ -44,7 +47,7 @@ fun SignupScreen(navController: NavHostController) {
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Back button
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -52,19 +55,19 @@ fun SignupScreen(navController: NavHostController) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = { navController.navigate("welcome") }) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.Black)
             }
         }
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Header
         Text(
             text = "Hello",
             fontSize = 20.sp,
             fontWeight = FontWeight.Medium,
             color = Color.Gray
         )
+
         Image(
             painter = painterResource(id = R.drawable.icon_logo),
             contentDescription = "App Logo",
@@ -81,72 +84,99 @@ fun SignupScreen(navController: NavHostController) {
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        // Username
+        // USERNAME FIELD
         OutlinedTextField(
             value = username,
             onValueChange = { username = it },
-            label = { Text("Username") },
+            label = { Text("Username", color = Color.Black) },
+            textStyle = TextStyle(color = Color.Black),
+            singleLine = true,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
             shape = RoundedCornerShape(12.dp),
-            singleLine = true
+            colors = TextFieldDefaults.outlinedTextFieldColors(
+                focusedBorderColor = Color.Black,
+                unfocusedBorderColor = Color.Gray,
+                cursorColor = Color.Black,
+                focusedLabelColor = Color.Black,
+                unfocusedLabelColor = Color.Black
+            )
         )
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Email
+        // EMAIL FIELD
         OutlinedTextField(
             value = email,
             onValueChange = { email = it },
-            label = { Text("Email") },
+            label = { Text("Email", color = Color.Black) },
+            textStyle = TextStyle(color = Color.Black),
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
             shape = RoundedCornerShape(12.dp),
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
+            colors = TextFieldDefaults.outlinedTextFieldColors(
+                focusedBorderColor = Color.Black,
+                unfocusedBorderColor = Color.Gray,
+                cursorColor = Color.Black,
+                focusedLabelColor = Color.Black,
+                unfocusedLabelColor = Color.Black
+            )
         )
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Password
+        // PASSWORD FIELD
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
-            label = { Text("Password") },
+            label = { Text("Password", color = Color.Black) },
+            textStyle = TextStyle(color = Color.Black),
             singleLine = true,
-            shape = RoundedCornerShape(12.dp),
             visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
             trailingIcon = {
-                val image = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff
                 IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                    Icon(imageVector = image, contentDescription = null)
+                    Icon(
+                        imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                        contentDescription = null,
+                        tint = Color.Black
+                    )
                 }
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(56.dp)
+                .height(56.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = TextFieldDefaults.outlinedTextFieldColors(
+                focusedBorderColor = Color.Black,
+                unfocusedBorderColor = Color.Gray,
+                cursorColor = Color.Black,
+                focusedLabelColor = Color.Black,
+                unfocusedLabelColor = Color.Black
+            )
         )
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Sign Up Button
         Button(
             onClick = {
                 when {
                     username.isBlank() || email.isBlank() || password.isBlank() ->
                         Toast.makeText(context, "All fields are required", Toast.LENGTH_SHORT).show()
                     else -> {
-                        // Create Firebase Auth user
                         auth.createUserWithEmailAndPassword(email, password)
                             .addOnCompleteListener { task ->
                                 if (task.isSuccessful) {
                                     val userId = auth.currentUser?.uid ?: ""
+
                                     val userInfo = hashMapOf(
                                         "username" to username,
                                         "email" to email
                                     )
+
                                     db.collection("users").document(userId).set(userInfo)
 
                                     Toast.makeText(context, "Signup Successful!", Toast.LENGTH_SHORT).show()
@@ -171,11 +201,7 @@ fun SignupScreen(navController: NavHostController) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Login Redirect
-        Row(
-            horizontalArrangement = Arrangement.Center,
-            modifier = Modifier.fillMaxWidth()
-        ) {
+        Row(horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth()) {
             Text("Already have an account? ", color = Color.Gray, fontSize = 14.sp)
             Text(
                 "Login",
