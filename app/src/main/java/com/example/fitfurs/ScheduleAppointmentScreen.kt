@@ -4,6 +4,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.LocalOverscrollConfiguration
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -70,13 +71,12 @@ fun ScheduleAppointmentScreen(navController: NavHostController, username: String
         var reason by remember { mutableStateOf("") }
         var navigateBack by remember { mutableStateOf(false) }
 
-        // Slot selector state
         val takenSlots = remember { mutableStateListOf<String>() }
         val availableSlots = remember { mutableStateListOf<String>() }
         var showSlotSelector by remember { mutableStateOf(false) }
         var loadingSlots by remember { mutableStateOf(false) }
 
-        val FitFursBlack = Color(0xFF000000)
+        val FitFursBlack = Color.Black
         val calendar = Calendar.getInstance()
 
         // DatePicker
@@ -129,7 +129,9 @@ fun ScheduleAppointmentScreen(navController: NavHostController, username: String
                                 .padding(end = 12.dp)
                         )
                     },
-                    colors = TopAppBarDefaults.smallTopAppBarColors(containerColor = Color.White)
+                    colors = TopAppBarDefaults.smallTopAppBarColors(
+                        containerColor = Color.White
+                    )
                 )
             }
         ) { padding ->
@@ -137,6 +139,7 @@ fun ScheduleAppointmentScreen(navController: NavHostController, username: String
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
+                    .background(Color.White) // FULL SCREEN WHITE
                     .padding(padding)
                     .padding(24.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -146,12 +149,16 @@ fun ScheduleAppointmentScreen(navController: NavHostController, username: String
                 // DATE
                 item {
                     Text("Date", color = FitFursBlack, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+
                     Button(
                         onClick = { datePickerDialog.show() },
                         colors = ButtonDefaults.buttonColors(containerColor = FitFursBlack),
                         modifier = Modifier.fillMaxWidth().padding(top = 6.dp)
                     ) {
-                        Text(if (date.isEmpty()) "Select Date" else "Date: $date", color = Color.White)
+                        Text(
+                            if (date.isEmpty()) "Select Date" else "Date: $date",
+                            color = Color.White
+                        )
                     }
                 }
 
@@ -159,6 +166,7 @@ fun ScheduleAppointmentScreen(navController: NavHostController, username: String
                 item {
                     Text("Time", color = FitFursBlack, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                     Spacer(modifier = Modifier.height(6.dp))
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -192,15 +200,13 @@ fun ScheduleAppointmentScreen(navController: NavHostController, username: String
                             Text(
                                 text = if (loadingSlots) "Loading..." else "${availableSlots.size} free • ${takenSlots.size} taken",
                                 fontSize = 12.sp,
-                                color = Color.Black
+                                color = FitFursBlack
                             )
                         }
                     }
                 }
 
-                // ---------------------------
-                // ✔ REASON (Dropdown)
-                // ---------------------------
+                // REASON DROPDOWN
                 item {
                     Text(
                         "Reason",
@@ -230,15 +236,17 @@ fun ScheduleAppointmentScreen(navController: NavHostController, username: String
                             value = reason,
                             onValueChange = { reason = it },
                             readOnly = true,
-                            placeholder = { Text("Select Reason") },
+                            placeholder = { Text("Select Reason", color = FitFursBlack) },
                             modifier = Modifier.menuAnchor().fillMaxWidth(),
                             shape = RoundedCornerShape(14.dp),
                             trailingIcon = {
                                 ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
                             },
+                            textStyle = LocalTextStyle.current.copy(color = FitFursBlack),
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = FitFursBlack,
-                                unfocusedBorderColor = Color.Gray
+                                unfocusedBorderColor = Color.Gray,
+                                cursorColor = FitFursBlack
                             )
                         )
 
@@ -248,7 +256,7 @@ fun ScheduleAppointmentScreen(navController: NavHostController, username: String
                         ) {
                             reasonOptions.forEach { option ->
                                 DropdownMenuItem(
-                                    text = { Text(option) },
+                                    text = { Text(option, color = FitFursBlack) },
                                     onClick = {
                                         reason = option
                                         expanded = false
@@ -302,7 +310,8 @@ fun ScheduleAppointmentScreen(navController: NavHostController, username: String
                                         "timestamp" to System.currentTimeMillis()
                                     )
 
-                                    db.collection("appointments_admin").document(docRef.id).set(adminData).await()
+                                    db.collection("appointments_admin").document(docRef.id)
+                                        .set(adminData).await()
 
                                     Toast.makeText(context, "Appointment Added!", Toast.LENGTH_SHORT).show()
                                     navigateBack = true
@@ -315,7 +324,7 @@ fun ScheduleAppointmentScreen(navController: NavHostController, username: String
                         shape = RoundedCornerShape(12.dp),
                         modifier = Modifier.fillMaxWidth().height(50.dp)
                     ) {
-                        Text("Save Appointment", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        Text("Save Appointment", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
                     }
                 }
             }
@@ -331,13 +340,19 @@ fun ScheduleAppointmentScreen(navController: NavHostController, username: String
         if (showSlotSelector) {
             AlertDialog(
                 onDismissRequest = { showSlotSelector = false },
-                title = { Text("Select a time on $date", fontWeight = FontWeight.Bold) },
+                title = {
+                    Text("Select a time on $date", fontWeight = FontWeight.Bold, color = FitFursBlack)
+                },
                 text = {
                     Column {
                         if (loadingSlots) {
-                            CircularProgressIndicator(modifier = Modifier.padding(8.dp), color = Color.Black)
+                            CircularProgressIndicator(
+                                modifier = Modifier.padding(8.dp),
+                                color = FitFursBlack
+                            )
                         } else {
-                            Text("Available", fontWeight = FontWeight.Bold)
+                            Text("Available", fontWeight = FontWeight.Bold, color = FitFursBlack)
+
                             if (availableSlots.isEmpty()) {
                                 Text("No available slots", color = Color.Red)
                             } else {
@@ -348,18 +363,24 @@ fun ScheduleAppointmentScreen(navController: NavHostController, username: String
                                                 time = slot
                                                 showSlotSelector = false
                                             },
-                                            colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
-                                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                            colors = ButtonDefaults.buttonColors(containerColor = FitFursBlack),
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(vertical = 4.dp),
                                             shape = RoundedCornerShape(50)
-                                        ) { Text(slot) }
+                                        ) {
+                                            Text(slot, color = Color.White)
+                                        }
                                     }
                                 }
                             }
 
                             Spacer(modifier = Modifier.height(12.dp))
-                            Text("Taken", fontWeight = FontWeight.Bold)
+
+                            Text("Taken", fontWeight = FontWeight.Bold, color = FitFursBlack)
+
                             if (takenSlots.isEmpty()) {
-                                Text("No taken slots", color = Color.Gray)
+                                Text("No taken slots", color = FitFursBlack)
                             } else {
                                 takenSlots.forEach { slot ->
                                     Text(slot, color = Color.Red, fontWeight = FontWeight.SemiBold)
@@ -370,10 +391,10 @@ fun ScheduleAppointmentScreen(navController: NavHostController, username: String
                 },
                 confirmButton = {
                     TextButton(onClick = { showSlotSelector = false }) {
-                        Text("Close", color = Color.Black)
+                        Text("Close", color = FitFursBlack)
                     }
                 },
-                containerColor = Color(0xFFF5F5F5)
+                containerColor = Color.White
             )
         }
     }
