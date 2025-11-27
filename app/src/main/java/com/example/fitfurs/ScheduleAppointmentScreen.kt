@@ -139,7 +139,7 @@ fun ScheduleAppointmentScreen(navController: NavHostController, username: String
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.White) // FULL SCREEN WHITE
+                    .background(Color.White)
                     .padding(padding)
                     .padding(24.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -206,7 +206,9 @@ fun ScheduleAppointmentScreen(navController: NavHostController, username: String
                     }
                 }
 
-                // REASON DROPDOWN
+                // -----------------------
+                // UPDATED REASON DROPDOWN
+                // -----------------------
                 item {
                     Text(
                         "Reason",
@@ -225,7 +227,6 @@ fun ScheduleAppointmentScreen(navController: NavHostController, username: String
                     )
 
                     var expanded by remember { mutableStateOf(false) }
-                    var reason by remember { mutableStateOf("") }
 
                     ExposedDropdownMenuBox(
                         expanded = expanded,
@@ -236,7 +237,7 @@ fun ScheduleAppointmentScreen(navController: NavHostController, username: String
                     ) {
                         OutlinedTextField(
                             value = reason,
-                            onValueChange = { reason = it },
+                            onValueChange = {},
                             readOnly = true,
                             placeholder = { Text("Select Reason", color = FitFursBlack) },
                             modifier = Modifier
@@ -250,22 +251,20 @@ fun ScheduleAppointmentScreen(navController: NavHostController, username: String
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = FitFursBlack,
                                 unfocusedBorderColor = Color.Gray,
-                                cursorColor = FitFursBlack
+                                cursorColor = FitFursBlack,
+                                focusedContainerColor = Color.White,
+                                unfocusedContainerColor = Color.White
                             )
                         )
 
                         ExposedDropdownMenu(
                             expanded = expanded,
-                            onDismissRequest = { expanded = false }
+                            onDismissRequest = { expanded = false },
+                            modifier = Modifier.background(Color.White)
                         ) {
                             reasonOptions.forEach { option ->
                                 DropdownMenuItem(
-                                    text = {
-                                        Text(
-                                            option,
-                                            color = FitFursBlack
-                                        )
-                                    },
+                                    text = { Text(option, color = FitFursBlack) },
                                     onClick = {
                                         reason = option
                                         expanded = false
@@ -276,7 +275,6 @@ fun ScheduleAppointmentScreen(navController: NavHostController, username: String
                                 )
                             }
                         }
-
                     }
                 }
 
