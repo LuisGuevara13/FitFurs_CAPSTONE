@@ -225,19 +225,23 @@ fun ScheduleAppointmentScreen(navController: NavHostController, username: String
                     )
 
                     var expanded by remember { mutableStateOf(false) }
+                    var reason by remember { mutableStateOf("") }
 
                     ExposedDropdownMenuBox(
                         expanded = expanded,
                         onExpandedChange = { expanded = !expanded },
-                        modifier = Modifier.fillMaxWidth().padding(top = 6.dp)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 6.dp)
                     ) {
-
                         OutlinedTextField(
                             value = reason,
                             onValueChange = { reason = it },
                             readOnly = true,
                             placeholder = { Text("Select Reason", color = FitFursBlack) },
-                            modifier = Modifier.menuAnchor().fillMaxWidth(),
+                            modifier = Modifier
+                                .menuAnchor()
+                                .fillMaxWidth(),
                             shape = RoundedCornerShape(14.dp),
                             trailingIcon = {
                                 ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
@@ -256,14 +260,23 @@ fun ScheduleAppointmentScreen(navController: NavHostController, username: String
                         ) {
                             reasonOptions.forEach { option ->
                                 DropdownMenuItem(
-                                    text = { Text(option, color = FitFursBlack) },
+                                    text = {
+                                        Text(
+                                            option,
+                                            color = FitFursBlack
+                                        )
+                                    },
                                     onClick = {
                                         reason = option
                                         expanded = false
-                                    }
+                                    },
+                                    colors = MenuDefaults.itemColors(
+                                        textColor = FitFursBlack
+                                    )
                                 )
                             }
                         }
+
                     }
                 }
 

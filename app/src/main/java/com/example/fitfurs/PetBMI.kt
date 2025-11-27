@@ -127,7 +127,7 @@ fun PetBMI(navController: NavHostController, userId: String) {
 
             Spacer(Modifier.height(8.dp))
 
-            // SPECIES DROPDOWN
+            // SPECIES DROPDOWN (UPDATED)
             ExposedDropdownMenuBox(
                 expanded = expanded,
                 onExpandedChange = { expanded = !expanded }
@@ -150,11 +150,13 @@ fun PetBMI(navController: NavHostController, userId: String) {
                 ) {
                     speciesOptions.forEach { option ->
                         DropdownMenuItem(
+                            modifier = Modifier.background(Color.White),
                             text = { Text(option, color = Color.Black) },
                             onClick = {
                                 species = option
                                 expanded = false
-                            }
+                            },
+                            colors = MenuDefaults.itemColors(textColor = Color.Black)
                         )
                     }
                 }
@@ -172,7 +174,7 @@ fun PetBMI(navController: NavHostController, userId: String) {
 
             Spacer(Modifier.height(8.dp))
 
-            // GENDER DROPDOWN
+            // GENDER DROPDOWN (UPDATED)
             ExposedDropdownMenuBox(
                 expanded = genderExpanded,
                 onExpandedChange = { genderExpanded = !genderExpanded }
@@ -195,11 +197,13 @@ fun PetBMI(navController: NavHostController, userId: String) {
                 ) {
                     genderOptions.forEach { option ->
                         DropdownMenuItem(
+                            modifier = Modifier.background(Color.White),
                             text = { Text(option, color = Color.Black) },
                             onClick = {
                                 gender = option
                                 genderExpanded = false
-                            }
+                            },
+                            colors = MenuDefaults.itemColors(textColor = Color.Black)
                         )
                     }
                 }

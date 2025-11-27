@@ -27,6 +27,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import java.text.SimpleDateFormat
 import java.util.*
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddActivityScreen(navController: NavHostController, username: String, petId: String) {
@@ -42,6 +43,19 @@ fun AddActivityScreen(navController: NavHostController, username: String, petId:
         .document(username)
         .collection("pets")
         .document(petId)
+
+
+    val textFieldColors = OutlinedTextFieldDefaults.colors(
+        focusedTextColor = Color.Black,
+        unfocusedTextColor = Color.Black,
+        focusedBorderColor = Color.Black,
+        unfocusedBorderColor = Color.Black,
+        focusedLabelColor = Color.Black,
+        unfocusedLabelColor = Color.Black,
+        focusedContainerColor = Color.White,
+        unfocusedContainerColor = Color.White,
+        cursorColor = Color.Black
+    )
 
     Scaffold(
         topBar = {
@@ -63,6 +77,7 @@ fun AddActivityScreen(navController: NavHostController, username: String, petId:
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
+
             // 🥣 Add Meal Section
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -77,12 +92,13 @@ fun AddActivityScreen(navController: NavHostController, username: String, petId:
                         value = meal,
                         onValueChange = { meal = it },
                         label = { Text("Meal Name") },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = textFieldColors
                     )
 
                     Spacer(Modifier.height(8.dp))
 
-                    // ⏰ Time picker
+                    // ⏰ Time Picker Button
                     Button(
                         onClick = {
                             val calendar = Calendar.getInstance()
@@ -112,16 +128,16 @@ fun AddActivityScreen(navController: NavHostController, username: String, petId:
                         value = amount,
                         onValueChange = { amount = it },
                         label = { Text("Amount (e.g. 1 cup)") },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = textFieldColors
                     )
 
                     Spacer(Modifier.height(16.dp))
 
-                    // ✅ Add Meal Button
+                    // Add Meal Button
                     Button(
                         onClick = {
                             if (meal.isNotEmpty() && time.isNotEmpty() && amount.isNotEmpty()) {
-
                                 val newMeal = mapOf(
                                     "meal" to meal,
                                     "time" to time,
@@ -132,11 +148,7 @@ fun AddActivityScreen(navController: NavHostController, username: String, petId:
                                     .add(newMeal)
                                     .addOnSuccessListener {
                                         scheduleMealNotification(context, meal, time, username, petId)
-                                        Toast.makeText(
-                                            context,
-                                            "Meal added and reminder set!",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
+                                        Toast.makeText(context, "Meal added & reminder set!", Toast.LENGTH_SHORT).show()
                                         meal = ""
                                         time = ""
                                         amount = ""
@@ -145,7 +157,7 @@ fun AddActivityScreen(navController: NavHostController, username: String, petId:
                                         Toast.makeText(context, "Failed to add meal.", Toast.LENGTH_SHORT).show()
                                     }
                             } else {
-                                Toast.makeText(context, "Fill all meal fields", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "Fill all fields", Toast.LENGTH_SHORT).show()
                             }
                         },
                         modifier = Modifier.fillMaxWidth(),
@@ -168,7 +180,7 @@ fun AddActivityScreen(navController: NavHostController, username: String, petId:
 
             Spacer(Modifier.height(24.dp))
 
-            // 🩺 Vet Recommended Exercise Section
+            // 🩺 Exercise Section
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
@@ -187,12 +199,12 @@ fun AddActivityScreen(navController: NavHostController, username: String, petId:
                                     val weight = document.getString("weight")?.toDoubleOrNull() ?: 0.0
 
                                     val recommendation = when {
-                                        weight < 5 -> "Short walks (10–15 mins, twice daily) for $breed"
-                                        weight in 5.0..15.0 -> "Moderate walks (20–30 mins, twice daily) for $breed"
-                                        else -> "Active play & long walks (30–45 mins, twice daily) for $breed"
+                                        weight < 5 -> "Short walks (10–15 mins twice daily) for $breed"
+                                        weight in 5.0..15.0 -> "Moderate walks (20–30 mins twice daily) for $breed"
+                                        else -> "Active play & long walks (30–45 mins twice daily) for $breed"
                                     }
 
-                                    val durationMinutes = when {
+                                    val duration = when {
                                         weight < 5 -> 10
                                         weight in 5.0..15.0 -> 25
                                         else -> 40
@@ -202,23 +214,14 @@ fun AddActivityScreen(navController: NavHostController, username: String, petId:
                                         "breed" to breed,
                                         "weight" to weight,
                                         "recommendation" to recommendation,
-                                        "duration" to durationMinutes,
+                                        "duration" to duration,
                                         "timestamp" to System.currentTimeMillis()
                                     )
 
                                     petRef.collection("exercise").add(data)
+                                    petRef.update("petBMI", (weight / 5).toString())
 
-                                    // Example BMI calculation (you may adjust formula)
-                                    val newBMI = (weight / 5).toString()
-                                    petRef.update("petBMI", newBMI)
-
-                                    Toast.makeText(
-                                        context,
-                                        "Exercise recommendation saved!",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                } else {
-                                    Toast.makeText(context, "Pet data not found!", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, "Exercise recommendation saved!", Toast.LENGTH_SHORT).show()
                                 }
                             }
                         },
@@ -248,6 +251,7 @@ fun AddActivityScreen(navController: NavHostController, username: String, petId:
         }
     }
 }
+
 
 /**
  * Schedule meal notification
