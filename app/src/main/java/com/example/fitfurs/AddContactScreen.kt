@@ -9,17 +9,16 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import com.google.firebase.firestore.FirebaseFirestore
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddContactScreen(navController: androidx.navigation.NavHostController) {
 
-    // FIX: Use Strings instead of TextFieldValue
     var name by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
     var clinicName by remember { mutableStateOf("") }
@@ -33,8 +32,7 @@ fun AddContactScreen(navController: androidx.navigation.NavHostController) {
             .background(Color.White),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-
-        // TOP TITLE BAR
+        // TOP APP BAR
         TopAppBar(
             title = {
                 Text(
@@ -43,25 +41,21 @@ fun AddContactScreen(navController: androidx.navigation.NavHostController) {
                     fontWeight = FontWeight.Bold
                 )
             },
-            modifier = Modifier.background(Color.White),
             navigationIcon = {
                 IconButton(onClick = { navController.popBackStack() }) {
-                    Icon(
-                        imageVector = Icons.Default.ArrowBack,
-                        contentDescription = "Back",
-                        tint = Color.Black
-                    )
+                    Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.Black)
                 }
-            }
+            },
+            colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
         )
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(24.dp))
 
-        // CONTACT CARD WITH SHADOW
+        // CARD FORM
         Card(
             modifier = Modifier
                 .fillMaxWidth(0.9f)
-                .shadow(12.dp, shape = RoundedCornerShape(16.dp)),
+                .shadow(12.dp, RoundedCornerShape(16.dp)),
             shape = RoundedCornerShape(16.dp)
         ) {
             Column(modifier = Modifier.padding(20.dp)) {
@@ -109,7 +103,8 @@ fun AddContactScreen(navController: androidx.navigation.NavHostController) {
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color.Black,
                         contentColor = Color.White
-                    )
+                    ),
+                    enabled = !isSaving
                 ) {
                     Text(if (isSaving) "Saving..." else "Save Contact")
                 }

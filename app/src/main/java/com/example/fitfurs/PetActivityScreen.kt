@@ -168,22 +168,36 @@ fun PetActivityScreen(navController: NavHostController, username: String, petId:
                 // PET HEADER
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    AsyncImage(
-                        model = petImageUrl ?: R.drawable.dog1,
-                        contentDescription = "Pet Image",
-                        modifier = Modifier.size(60.dp).clip(CircleShape),
+                    // Pet Image + Name
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        AsyncImage(
+                            model = petImageUrl ?: R.drawable.dog1,
+                            contentDescription = "Pet Image",
+                            modifier = Modifier.size(60.dp).clip(CircleShape),
+                            contentScale = ContentScale.Crop
+                        )
+
+                        Spacer(Modifier.width(12.dp))
+
+                        Text(
+                            petName ?: "Unknown Pet",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 22.sp,
+                            color = Color.Black
+                        )
+                    }
+
+                    // Logo on the right
+                    Image(
+                        painter = painterResource(id = R.drawable.icon_logo), // your logo file
+                        contentDescription = "App Logo",
+                        modifier = Modifier
+                            .size(90.dp)
+                            .clip(RoundedCornerShape(12.dp)),
                         contentScale = ContentScale.Crop
-                    )
-
-                    Spacer(Modifier.width(12.dp))
-
-                    Text(
-                        petName ?: "Unknown Pet",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 22.sp,
-                        color = Color.Black
                     )
                 }
 

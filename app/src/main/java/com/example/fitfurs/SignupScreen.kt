@@ -36,6 +36,7 @@ fun SignupScreen(navController: NavHostController) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
+    var agreeToTerms by remember { mutableStateOf(false) }  // New state for checkbox
 
     val context = LocalContext.current
     val auth = FirebaseAuth.getInstance()
@@ -47,7 +48,6 @@ fun SignupScreen(navController: NavHostController) {
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -159,13 +159,41 @@ fun SignupScreen(navController: NavHostController) {
             )
         )
 
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // TERMS AND AGREEMENT CHECKBOX
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { agreeToTerms = !agreeToTerms }
+        ) {
+            Checkbox(
+                checked = agreeToTerms,
+                onCheckedChange = { agreeToTerms = it },
+                colors = CheckboxDefaults.colors(
+                    checkedColor = Color.Black,
+                    uncheckedColor = Color.Gray
+                )
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "I agree to the Terms and Data Collection Policy",
+                color = Color.Black,
+                fontSize = 14.sp
+            )
+        }
+
         Spacer(modifier = Modifier.height(24.dp))
 
+        // SIGN UP BUTTON
         Button(
             onClick = {
                 when {
                     username.isBlank() || email.isBlank() || password.isBlank() ->
                         Toast.makeText(context, "All fields are required", Toast.LENGTH_SHORT).show()
+                    !agreeToTerms ->
+                        Toast.makeText(context, "You must agree to the terms", Toast.LENGTH_SHORT).show()
                     else -> {
                         auth.createUserWithEmailAndPassword(email, password)
                             .addOnCompleteListener { task ->
@@ -212,3 +240,4 @@ fun SignupScreen(navController: NavHostController) {
         }
     }
 }
+

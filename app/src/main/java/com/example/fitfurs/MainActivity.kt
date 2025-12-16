@@ -108,7 +108,10 @@ fun AppNavigation(navController: NavHostController) {
             val username = backStackEntry.arguments?.getString("username") ?: ""
             PetListOverview(navController, username)
         }
-
+        composable("petschedule/{username}") { backStackEntry ->
+            val username = backStackEntry.arguments?.getString("username") ?: ""
+            PetListSchedule(navController, username)
+        }
 
         composable("bmi_form/{username}") { backStackEntry ->
             val username = backStackEntry.arguments?.getString("username") ?: ""
@@ -144,9 +147,8 @@ fun AppNavigation(navController: NavHostController) {
         composable("pet_profile/{username}/{petId}") { backStackEntry ->
             val username = backStackEntry.arguments?.getString("username") ?: ""
             val petId = backStackEntry.arguments?.getString("petId") ?: ""
-            PetProfileScreen(navController, username, petId)
+            PetProfileScreen(navController, username, petId, supabaseClient = SupabaseClientInstance)
         }
-
 
         composable("contacts") { ContactsScreen(navController) }
 
@@ -167,6 +169,10 @@ fun AppNavigation(navController: NavHostController) {
             val username = it.arguments?.getString("username") ?: ""
             ChangePasswordScreen(navController, username)
         }
+        composable("appointment/{username}/{petId}") {
+            AppointmentScreen(navController, it.arguments!!.getString("username")!!, it.arguments!!.getString("petId")!!)
+        }
+
         composable("add_contact") {
             AddContactScreen(navController)
         }

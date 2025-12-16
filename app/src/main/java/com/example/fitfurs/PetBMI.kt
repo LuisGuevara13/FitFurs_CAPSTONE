@@ -23,7 +23,6 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
-import androidx.compose.ui.draw.shadow
 
 fun updatePetCount(userId: String) {
     val db = FirebaseFirestore.getInstance()
@@ -54,12 +53,20 @@ fun PetBMI(navController: NavHostController, userId: String) {
     var fileUri by remember { mutableStateOf<Uri?>(null) }
     var fileName by remember { mutableStateOf("") }
 
+    var isSaving by remember { mutableStateOf(false) }
+
+    // 🚫 NEW FLAG: prevents double submission
+    var hasSubmitted by remember { mutableStateOf(false) }
+
     val textFieldColors = TextFieldDefaults.outlinedTextFieldColors(
         focusedTextColor = Color.Black,
         unfocusedTextColor = Color.Black,
         focusedLabelColor = Color.Black,
         unfocusedLabelColor = Color.Black,
-        cursorColor = Color.Black
+        cursorColor = Color.Black,
+        focusedBorderColor = Color.Black,
+        unfocusedBorderColor = Color.Black,
+        containerColor = Color.White
     )
 
     val pickFileLauncher = rememberLauncherForActivityResult(
@@ -71,7 +78,7 @@ fun PetBMI(navController: NavHostController, userId: String) {
         }
     }
 
-    var expanded by remember { mutableStateOf(false) }
+    var speciesExpanded by remember { mutableStateOf(false) }
     val speciesOptions = listOf("Dog", "Cat")
 
     var genderExpanded by remember { mutableStateOf(false) }
@@ -81,6 +88,7 @@ fun PetBMI(navController: NavHostController, userId: String) {
         containerColor = Color.White,
         topBar = {
             TopAppBar(
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White),
                 title = {
                     Text(
                         "BMI Fill Up Form",
@@ -89,19 +97,16 @@ fun PetBMI(navController: NavHostController, userId: String) {
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(
+                        onClick = { if (!isSaving) navController.popBackStack() }
+                    ) {
                         Icon(
                             Icons.Default.ArrowBack,
                             contentDescription = "Back",
                             tint = Color.Black
                         )
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White,
-                    titleContentColor = Color.Black,
-                    navigationIconContentColor = Color.Black
-                )
+                }
             )
         }
     ) { padding ->
@@ -116,47 +121,44 @@ fun PetBMI(navController: NavHostController, userId: String) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
-            // PET NAME
             OutlinedTextField(
                 value = petName,
                 onValueChange = { petName = it },
                 label = { Text("Pet Name", color = Color.Black) },
                 colors = textFieldColors,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !isSaving
             )
 
             Spacer(Modifier.height(8.dp))
 
-            // SPECIES DROPDOWN (UPDATED)
             ExposedDropdownMenuBox(
-                expanded = expanded,
-                onExpandedChange = { expanded = !expanded }
+                expanded = speciesExpanded,
+                onExpandedChange = { if (!isSaving) speciesExpanded = !speciesExpanded }
             ) {
                 OutlinedTextField(
                     readOnly = true,
                     value = species,
                     onValueChange = {},
                     label = { Text("Species", color = Color.Black) },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(speciesExpanded) },
                     colors = textFieldColors,
-                    modifier = Modifier
-                        .menuAnchor()
-                        .fillMaxWidth()
+                    modifier = Modifier.menuAnchor().fillMaxWidth(),
+                    enabled = !isSaving
                 )
 
                 ExposedDropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false }
+                    expanded = speciesExpanded,
+                    onDismissRequest = { speciesExpanded = false },
+                    modifier = Modifier.background(Color.White)
                 ) {
                     speciesOptions.forEach { option ->
                         DropdownMenuItem(
-                            modifier = Modifier.background(Color.White),
                             text = { Text(option, color = Color.Black) },
                             onClick = {
                                 species = option
-                                expanded = false
-                            },
-                            colors = MenuDefaults.itemColors(textColor = Color.Black)
+                                speciesExpanded = false
+                            }
                         )
                     }
                 }
@@ -169,15 +171,15 @@ fun PetBMI(navController: NavHostController, userId: String) {
                 onValueChange = { breed = it },
                 label = { Text("Breed", color = Color.Black) },
                 colors = textFieldColors,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !isSaving
             )
 
             Spacer(Modifier.height(8.dp))
 
-            // GENDER DROPDOWN (UPDATED)
             ExposedDropdownMenuBox(
                 expanded = genderExpanded,
-                onExpandedChange = { genderExpanded = !genderExpanded }
+                onExpandedChange = { if (!isSaving) genderExpanded = !genderExpanded }
             ) {
                 OutlinedTextField(
                     readOnly = true,
@@ -186,24 +188,22 @@ fun PetBMI(navController: NavHostController, userId: String) {
                     label = { Text("Gender", color = Color.Black) },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(genderExpanded) },
                     colors = textFieldColors,
-                    modifier = Modifier
-                        .menuAnchor()
-                        .fillMaxWidth()
+                    modifier = Modifier.menuAnchor().fillMaxWidth(),
+                    enabled = !isSaving
                 )
 
                 ExposedDropdownMenu(
                     expanded = genderExpanded,
-                    onDismissRequest = { genderExpanded = false }
+                    onDismissRequest = { genderExpanded = false },
+                    modifier = Modifier.background(Color.White)
                 ) {
                     genderOptions.forEach { option ->
                         DropdownMenuItem(
-                            modifier = Modifier.background(Color.White),
                             text = { Text(option, color = Color.Black) },
                             onClick = {
                                 gender = option
                                 genderExpanded = false
-                            },
-                            colors = MenuDefaults.itemColors(textColor = Color.Black)
+                            }
                         )
                     }
                 }
@@ -217,7 +217,8 @@ fun PetBMI(navController: NavHostController, userId: String) {
                 label = { Text("Age", color = Color.Black) },
                 colors = textFieldColors,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !isSaving
             )
 
             Spacer(Modifier.height(8.dp))
@@ -228,22 +229,18 @@ fun PetBMI(navController: NavHostController, userId: String) {
                 label = { Text("Weight (kg)", color = Color.Black) },
                 colors = textFieldColors,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !isSaving
             )
 
             Spacer(Modifier.height(16.dp))
 
-            Text(
-                "Insert picture/video of your pet",
-                fontSize = 14.sp,
-                color = Color.Black
-            )
+            Text("Insert picture/video of your pet", fontSize = 14.sp, color = Color.Black)
 
             OutlinedButton(
-                onClick = { pickFileLauncher.launch("*/*") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .shadow(4.dp, RoundedCornerShape(10.dp)),
+                onClick = { if (!isSaving) pickFileLauncher.launch("*/*") },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !isSaving,
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Black)
             ) {
                 Text(
@@ -257,40 +254,46 @@ fun PetBMI(navController: NavHostController, userId: String) {
             Button(
                 onClick = {
 
-                    if (petName.isBlank() ||
-                        species.isBlank() ||
-                        breed.isBlank() ||
-                        gender.isBlank() ||
-                        age.isBlank() ||
-                        weight.isBlank()
+                    // 🚫 Prevent double tap instantly!
+                    if (hasSubmitted) return@Button
+                    hasSubmitted = true
+
+                    if (petName.isBlank() || species.isBlank() || breed.isBlank() ||
+                        gender.isBlank() || age.isBlank() || weight.isBlank()
                     ) {
                         Toast.makeText(context, "Fill all fields", Toast.LENGTH_SHORT).show()
+                        hasSubmitted = false
                         return@Button
                     }
 
                     if (fileUri == null) {
                         Toast.makeText(context, "Please select an image", Toast.LENGTH_SHORT).show()
+                        hasSubmitted = false
                         return@Button
                     }
+
+                    isSaving = true
 
                     scope.launch {
                         var uploadedUrl: String? = null
 
                         try {
-                            val bytes = context.contentResolver
-                                .openInputStream(fileUri!!)!!
-                                .readBytes()
+                            val bytes =
+                                context.contentResolver.openInputStream(fileUri!!)!!.readBytes()
 
                             SupabaseClientInstance.storage
                                 .from("pet_media")
-                                .upload(fileName, bytes, upsert = true)
+                                .upload(fileName, bytes, upsert = false)
 
                             uploadedUrl = SupabaseClientInstance.storage
                                 .from("pet_media")
                                 .publicUrl(fileName)
 
                         } catch (e: Exception) {
+                            isSaving = false
+                            hasSubmitted = false
                             Toast.makeText(context, "Upload failed", Toast.LENGTH_LONG).show()
+                            return@launch
                         }
 
                         val petData = hashMapOf(
@@ -310,19 +313,28 @@ fun PetBMI(navController: NavHostController, userId: String) {
                                 updatePetCount(userId)
                                 Toast.makeText(context, "Pet saved!", Toast.LENGTH_SHORT).show()
                                 navController.navigate("home/$userId")
+                                isSaving = false
                             }
                             .addOnFailureListener {
+                                isSaving = false
+                                hasSubmitted = false
                                 Toast.makeText(context, "Failed to save", Toast.LENGTH_LONG).show()
                             }
                     }
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(50.dp)
-                    .shadow(6.dp, RoundedCornerShape(12.dp)),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.Black)
+                    .height(50.dp),
+                enabled = !isSaving,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (!isSaving) Color.Black else Color.Gray
+                )
             ) {
-                Text("Next", color = Color.White, fontWeight = FontWeight.Bold)
+                Text(
+                    if (!isSaving) "Next" else "Saving… Please wait",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
     }

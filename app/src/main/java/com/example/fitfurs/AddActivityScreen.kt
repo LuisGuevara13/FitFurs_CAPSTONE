@@ -27,7 +27,6 @@ import com.google.firebase.firestore.FirebaseFirestore
 import java.text.SimpleDateFormat
 import java.util.*
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddActivityScreen(navController: NavHostController, username: String, petId: String) {
@@ -43,7 +42,6 @@ fun AddActivityScreen(navController: NavHostController, username: String, petId:
         .document(username)
         .collection("pets")
         .document(petId)
-
 
     val textFieldColors = OutlinedTextFieldDefaults.colors(
         focusedTextColor = Color.Black,
@@ -63,9 +61,16 @@ fun AddActivityScreen(navController: NavHostController, username: String, petId:
                 title = { Text("Add Activity") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            Icons.Default.ArrowBack,
+                            contentDescription = "Back",
+                            tint = Color.Black // <-- Back arrow black
+                        )
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.White // <-- Top bar white
+                )
             )
         },
         containerColor = Color(0xFFF5F5F5)
@@ -138,24 +143,38 @@ fun AddActivityScreen(navController: NavHostController, username: String, petId:
                     Button(
                         onClick = {
                             if (meal.isNotEmpty() && time.isNotEmpty() && amount.isNotEmpty()) {
+
                                 val newMeal = mapOf(
                                     "meal" to meal,
                                     "time" to time,
-                                    "amount" to amount
+                                    "amount" to amount,
+                                    "timestamp" to System.currentTimeMillis()
                                 )
 
+                                // Save to Firestore
                                 petRef.collection("mealtime")
                                     .add(newMeal)
                                     .addOnSuccessListener {
-                                        scheduleMealNotification(context, meal, time, username, petId)
-                                        Toast.makeText(context, "Meal added & reminder set!", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, "Meal saved!", Toast.LENGTH_SHORT).show()
+
+                                        // Schedule notification AFTER successful save
+                                        try {
+                                            scheduleMealNotification(context, meal, time, username, petId)
+                                        } catch (e: Exception) {
+                                            e.printStackTrace()
+                                            Toast.makeText(context, "Error scheduling notification.", Toast.LENGTH_SHORT).show()
+                                        }
+
+                                        // Clear input fields
                                         meal = ""
                                         time = ""
                                         amount = ""
                                     }
-                                    .addOnFailureListener {
-                                        Toast.makeText(context, "Failed to add meal.", Toast.LENGTH_SHORT).show()
+                                    .addOnFailureListener { e ->
+                                        Toast.makeText(context, "Failed to save meal: ${e.message}", Toast.LENGTH_LONG).show()
+                                        e.printStackTrace()
                                     }
+
                             } else {
                                 Toast.makeText(context, "Fill all fields", Toast.LENGTH_SHORT).show()
                             }
@@ -173,7 +192,7 @@ fun AddActivityScreen(navController: NavHostController, username: String, petId:
                         modifier = Modifier.fillMaxWidth(),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1976D2))
                     ) {
-                        Text("Vet Food Recommendation", color = Color.White)
+                        Text("Food Calculator", color = Color.White)
                     }
                 }
             }
@@ -187,7 +206,7 @@ fun AddActivityScreen(navController: NavHostController, username: String, petId:
                 colors = CardDefaults.cardColors(containerColor = Color.White)
             ) {
                 Column(Modifier.padding(16.dp)) {
-                    Text("Vet Recommended Exercise", fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                    Text("Exercise", fontWeight = FontWeight.Bold, fontSize = 20.sp)
                     Spacer(Modifier.height(8.dp))
 
                     Button(
@@ -199,14 +218,14 @@ fun AddActivityScreen(navController: NavHostController, username: String, petId:
                                     val weight = document.getString("weight")?.toDoubleOrNull() ?: 0.0
 
                                     val recommendation = when {
-                                        weight < 5 -> "Short walks (10–15 mins twice daily) for $breed"
-                                        weight in 5.0..15.0 -> "Moderate walks (20–30 mins twice daily) for $breed"
+                                        weight < 7 -> "Short walks (10–15 mins twice daily) for $breed"
+                                        weight in 7.0..15.0 -> "Moderate walks (20–30 mins twice daily) for $breed"
                                         else -> "Active play & long walks (30–45 mins twice daily) for $breed"
                                     }
 
                                     val duration = when {
-                                        weight < 5 -> 10
-                                        weight in 5.0..15.0 -> 25
+                                        weight < 7 -> 10
+                                        weight in 8.0..15.0 -> 25
                                         else -> 40
                                     }
 
@@ -228,7 +247,7 @@ fun AddActivityScreen(navController: NavHostController, username: String, petId:
                         colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Generate Vet Recommendation", color = Color.White)
+                        Text("Generate Exercise", color = Color.White)
                     }
                 }
             }
@@ -251,6 +270,7 @@ fun AddActivityScreen(navController: NavHostController, username: String, petId:
         }
     }
 }
+
 
 
 /**

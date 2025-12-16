@@ -134,7 +134,7 @@ fun HomeScreen(navController: NavHostController, userId: String) {
         // --- Buttons Section ---
         ActivityButton(
             iconRes = R.drawable.icon2,
-            text = "Medical Tracking",
+            text = "Medical History",
             onClick = { navController.navigate("petlistmed/$userId") }
         )
         Spacer(modifier = Modifier.height(24.dp))
@@ -143,6 +143,12 @@ fun HomeScreen(navController: NavHostController, userId: String) {
             iconRes = R.drawable.icon3,
             text = "Diet & Exercise",
             onClick = { navController.navigate("petlist/$userId") }
+        )
+        Spacer(modifier = Modifier.height(24.dp))
+        ActivityButton(
+            iconRes = R.drawable.icon2,   // ← set your paw icon here
+            text = "Appointment",
+            onClick = { navController.navigate("petschedule/$userId") }
         )
         Spacer(modifier = Modifier.height(24.dp))
 
